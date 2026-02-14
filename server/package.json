@@ -1,22 +1,4 @@
 {
-  "name": "eventhub",
-  "version": "1.0.0",
-  "description": "��#\u0000 \u0000E\u0000v\u0000e\u0000n\u0000t\u0000-\u0000h\u0000u\u0000b\u0000\r\u0000 \u0000",
-  "homepage": "https://github.com/Binu3030/Event-hub#readme",
-  "bugs": {
-    "url": "https://github.com/Binu3030/Event-hub/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Binu3030/Event-hub.git"
-  },
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "dependencies": {
     "express": "^5.2.1"
   }
