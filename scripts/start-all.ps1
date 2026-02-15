@@ -1,0 +1,2 @@
+Start-Process -FilePath "powershell" -ArgumentList "-NoExit","-Command","cd $PSScriptRoot\..\server; npm run dev"
+Start-Process -FilePath "powershell" -ArgumentList "-NoExit","-Command","cd $PSScriptRoot\..\client; npm run dev"
