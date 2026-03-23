@@ -1,17 +1,9 @@
-const express = require("express");
+import express from "express";
+import { verifyToken, authorizeRoles } from "../middleware/authMiddleware.js";
+
 const router = express.Router();
-const {
-  createEvent,
-  getEvents,
-  getEventById,
-  updateEvent,
-  deleteEvent
-} = require("../controllers/eventController");
 
-router.post("/", createEvent);
-router.get("/", getEvents);
-router.get("/:id", getEventById);
-router.put("/:id", updateEvent);
-router.delete("/:id", deleteEvent);
+// protected route
+router.post("/", verifyToken, authorizeRoles("organizer"), createEvent);
 
-module.exports = router;
+export default router;
