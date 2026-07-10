@@ -1,24 +1,33 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
+const UserSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: [true, "Name field is mandatory"] 
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true
+  email: { 
+    type: String, 
+    unique: true, 
+    required: [true, "Email field is mandatory"],
+    lowercase: true,
+    trim: true
   },
-  password: {
-    type: String,
-    required: true
+  password: { 
+    type: String, 
+    required: [true, "Password hash storage is mandatory"] 
   },
-  role: {
-    type: String,
-    enum: ["user", "organizer", "admin"],
-    default: "user"
-  }
+  role: { 
+    type: String, 
+    enum: ['Attendee', 'Organizer'], 
+    default: 'Attendee' 
+  },
+  // Algorithmic Weight Map: Stores tags as keys and frequency weights as values
+  // e.g., { "tech": 5, "music": 2 }
+  interactedTags: { 
+    type: Map, 
+    of: Number, 
+    default: {} 
+  } 
 }, { timestamps: true });
 
-export default mongoose.model("User", userSchema);
+module.exports = mongoose.model('User', UserSchema);

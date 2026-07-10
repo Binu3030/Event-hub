@@ -1,39 +1,44 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
-const eventSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
+const EventSchema = new mongoose.Schema({
+  title: { 
+    type: String, 
+    required: [true, "Event title is mandatory"],
+    trim: true 
   },
-  description: String,
-  date: {
-    type: Date,
-    required: true
+  description: { 
+    type: String, 
+    required: [true, "Event description is mandatory"] 
   },
-  location: String,
-  price: {
-    type: Number,
-    default: 0
+  category: { 
+    type: String, 
+    required: [true, "Domain category grouping is mandatory"] 
   },
-  capacity: {
-    type: Number,
-    required: true
+  tags: [{ 
+    type: String 
+  }], // Array of strings used for similarity calculation vectors
+  capacity: { 
+    type: Number, 
+    required: [true, "Total ticket capacity pool is mandatory"] 
   },
-  availableSeats: {
-    type: Number
+  availableSeats: { 
+    type: Number, 
+    required: [true, "Remaining available seat inventory is mandatory"] 
   },
-  organizer: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  }
+  // System Waitlist Storage: Array used by the binary heap processing engine
+  waitlist: [{
+    userId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User' 
+    },
+    priorityScore: { 
+      type: Number 
+    },
+    joinedAt: { 
+      type: Date, 
+      default: Date.now 
+    }
+  }]
 }, { timestamps: true });
 
-// auto set availableSeats = capacity
-eventSchema.pre("save", function(next) {
-  if (!this.availableSeats) {
-    this.availableSeats = this.capacity;
-  }
-  next();
-});
-
-export default mongoose.model("Event", eventSchema);
+module.exports = mongoose.model('Event', EventSchema);
