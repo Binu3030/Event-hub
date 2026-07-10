@@ -1,26 +1,15 @@
-const Event = require("../models/event");
+import Event from "../models/event.js";
 
-exports.createEvent = async (req, res) => {
-  const event = await Event.create(req.body);
-  res.json(event);
-};
+export const createEvent = async (req, res) => {
+  try {
+    const event = await Event.create({
+      ...req.body,
+      organizer: req.user.id
+    });
 
-exports.getEvents = async (req, res) => {
-  const events = await Event.find().populate("organizer");
-  res.json(events);
-};
+    res.status(201).json(event);
 
-exports.getEventById = async (req, res) => {
-  const event = await Event.findById(req.params.id);
-  res.json(event);
-};
-
-exports.updateEvent = async (req, res) => {
-  const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(event);
-};
-
-exports.deleteEvent = async (req, res) => {
-  await Event.findByIdAndDelete(req.params.id);
-  res.json({ message: "Event deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
