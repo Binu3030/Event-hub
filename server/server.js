@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db.js');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 // Import your custom routing blueprints built over the last few days
 const authRoutes = require('./routes/authRoutes');
@@ -15,6 +16,11 @@ connectDB();
 // 2. Global Middleware Configurations
 app.use(cors());          // Allows your React application to make cross-origin network calls
 app.use(express.json());  // Native body parser to handle incoming JSON request payloads
+
+
+app.use('/api/bookings', bookingRoutes);
+
+
 
 // 3. System API Endpoints Gateway Mapping
 app.use('/api/auth', authRoutes);     // Routes handled by Day 3 Auth Engine
