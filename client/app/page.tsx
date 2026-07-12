@@ -1,9 +1,9 @@
-import { Header } from '@/components/header'
-import { Hero } from '@/components/hero'
-import { FeaturedEvents } from '@/components/featured-events'
-import { Features } from '@/components/features'
-import { CTASection } from '@/components/cta-section'
-import { Footer } from '@/components/footer'
+import { Header } from '@/src/components/header'
+import { Hero } from '@/src/components/hero'
+import { FeaturedEvents } from '@/src/components/featured-events'
+import { Features } from '@/src/components/features'
+import { CTASection } from '@/src/components/Navbar'
+import { Footer } from '@/src/components/footer'
 
 export default function Home() {
   return (
