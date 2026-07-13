@@ -20,16 +20,38 @@
 
 
 
+// import React from 'react';
+// import Navbar from './components/Navbar';
+// import Dashboard from './pages/Dashboard';
+
+// function App() {
+//   return (
+//     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+//       <Navbar />
+//       <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+//         <Dashboard />
+//       </main>
+//     </div>
+//   );
+// }
+
+// export default App;
+
+
+
+
+
+
 import React from 'react';
 import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
+import CreateEvent from './pages/CreateEvent';
 
 function App() {
   return (
     <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       <Navbar />
-      <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-        <Dashboard />
+      <main style={{ padding: '2rem' }}>
+        <CreateEvent />
       </main>
     </div>
   );
