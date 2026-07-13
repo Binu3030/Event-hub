@@ -1,8 +1,11 @@
 import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
   const { login } = useContext(AuthContext);
+  const navigate = useNavigate(); // Initialize the redirect function
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +22,8 @@ const Login = () => {
     if (!result.success) {
       setError(result.error);
     } else {
-      alert('Authentication successful! Welcome back.');
+      // Programmatic routing shift right into the application dashboard grid
+      navigate('/dashboard'); 
     }
   };
 
