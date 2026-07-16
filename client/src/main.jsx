@@ -1,8 +1,15 @@
 import React, { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleLogoutClick = () => {
+    logout();
+    navigate('/login'); // Instantly redirect back to login on logout
+  };
 
   // Modular styling object for inline clean layouts
   const styles = {
@@ -19,7 +26,8 @@ const Navbar = () => {
       fontSize: '1.5rem',
       fontWeight: 'bold',
       letterSpacing: '0.5px',
-      cursor: 'pointer'
+      color: '#ffffff',
+      textDecoration: 'none'
     },
     linksContainer: {
       display: 'flex',
@@ -30,7 +38,8 @@ const Navbar = () => {
       color: '#cbd5e1',
       textDecoration: 'none',
       cursor: 'pointer',
-      fontSize: '0.95rem'
+      fontSize: '0.95rem',
+      transition: 'color 0.2s'
     },
     btn: {
       backgroundColor: '#ef4444',
@@ -46,38 +55,41 @@ const Navbar = () => {
       backgroundColor: '#334155',
       padding: '0.25rem 0.6rem',
       borderRadius: '12px',
-      color: '#38bdf8'
+      color: '#38bdf8',
+      textTransform: 'capitalize'
     }
   };
 
   return (
     <nav style={styles.nav}>
-      <div style={styles.logo}>🎉 EventHub</div>
+      {/* Clicking logo navigates to Dashboard */}
+      <Link to="/dashboard" style={styles.logo}>🎉 EventHub</Link>
       
       <div style={styles.linksContainer}>
-        <span style={styles.link}>Browse Events</span>
+        {/* Main Explore link */}
+        <Link to="/dashboard" style={styles.link}>Browse Events</Link>
         
         {user ? (
           <>
             {/* Dynamic Rendering based on RBAC Role Types */}
             {user.role === 'organizer' ? (
-              <span style={styles.link}>➕ Create Event</span>
+              <Link to="/create-event" style={styles.link}>➕ Create Event</Link>
             ) : (
-              <span style={styles.link}>🎟️ My Tickets</span>
+              <Link to="/my-bookings" style={styles.link}>🎟️ My Tickets</Link>
             )}
             
             <span style={styles.userBadge}>
               {user.name} ({user.role})
             </span>
             
-            <button onClick={logout} style={styles.btn}>
+            <button onClick={handleLogoutClick} style={styles.btn}>
               Logout
             </button>
           </>
         ) : (
           <>
-            <span style={styles.link}>Login</span>
-            <span style={styles.link}>Register</span>
+            <Link to="/login" style={styles.link}>Login</Link>
+            <Link to="/register" style={styles.link}>Register</Link>
           </>
         )}
       </div>
