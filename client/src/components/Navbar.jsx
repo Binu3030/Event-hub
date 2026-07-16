@@ -1,27 +1,3 @@
-// import Link from "next/link";
-
-
-// export function CTASection() {
-//   return (
-//     <section className="py-12 text-center">
-//       <h3 className="text-xl font-semibold mb-4">Ready to Get Started?</h3>
-      
-//       <Link href="/register">
-//         <button className="px-6 py-3 bg-blue-600 text-white rounded">
-//           Sign Up Now
-//         </button>
-//       </Link>
-
-//     </section>
-//   )
-// }
-
-
-
-
-
-
-
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -91,7 +67,10 @@ const Navbar = () => {
         
         {user ? (
           <>
-            {/* Dynamic UI Link generation based on Role RBAC profile */}
+            {/* My Bookings option visible for all authenticated users */}
+            <Link to="/my-bookings" style={styles.link}>My Bookings</Link>
+
+            {/* Create Event option visible strictly to Organizers */}
             {user.role === 'organizer' && (
               <Link to="/create-event" style={styles.link}>➕ Create Event</Link>
             )}
@@ -106,7 +85,9 @@ const Navbar = () => {
           </>
         ) : (
           <>
+            {/* Navigation links for guests */}
             <Link to="/login" style={styles.link}>Login</Link>
+            <Link to="/register" style={styles.link}>Register</Link>
           </>
         )}
       </div>
