@@ -4,7 +4,10 @@ import API from '../api';
 const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  
+  // Search & Filter State variables
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('All');
 
   // Fetch events from the backend database when the component loads
   useEffect(() => {
@@ -21,13 +24,9 @@ const Dashboard = () => {
     fetchEvents();
   }, []);
 
-  /**
-   * Ticket Booking Trigger
-   * Dispatches request directly to your Day 7 priority waitlist engine
-   */
+  // Ticket Booking Trigger
   const handleBookTicket = async (eventId) => {
     try {
-      setMessage('');
       const response = await API.post(`/bookings/${eventId}`);
       alert(response.data.message);
       
@@ -39,12 +38,53 @@ const Dashboard = () => {
     }
   };
 
+  // 1. Get a unique list of locations from our events to populate the filter dropdown dynamically
+  const locations = ['All', ...new Set(events.map(evt => evt.location))];
+
+  // 2. Filter events dynamically based on search query and selected location
+  const filteredEvents = events.filter(evt => {
+    const matchesSearch = evt.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          evt.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLocation = selectedLocation === 'All' || evt.location === selectedLocation;
+    return matchesSearch && matchesLocation;
+  });
+
   const styles = {
+    filterBar: {
+      display: 'flex',
+      gap: '1rem',
+      marginBottom: '2rem',
+      flexWrap: 'wrap',
+      backgroundColor: '#ffffff',
+      padding: '1rem',
+      borderRadius: '8px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      border: '1px solid #e2e8f0'
+    },
+    input: {
+      flex: 2,
+      minWidth: '200px',
+      padding: '0.65rem 1rem',
+      borderRadius: '6px',
+      border: '1px solid #cbd5e1',
+      fontSize: '0.95rem',
+      outline: 'none'
+    },
+    select: {
+      flex: 1,
+      minWidth: '150px',
+      padding: '0.65rem 1rem',
+      borderRadius: '6px',
+      border: '1px solid #cbd5e1',
+      backgroundColor: '#ffffff',
+      fontSize: '0.95rem',
+      outline: 'none'
+    },
     grid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
       gap: '1.5rem',
-      padding: '1.5rem 0'
+      padding: '1rem 0'
     },
     card: {
       backgroundColor: '#ffffff',
@@ -91,18 +131,41 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) return <div>Loading available events...</div>;
+  if (loading) return <div style={{ textAlign: 'center', marginTop: '2rem' }}>Loading available events...</div>;
 
   return (
     <div>
       <h2 style={{ color: '#0f172a', textAlign: 'left', marginBottom: '0.5rem' }}>Explore Live Events</h2>
-      <p style={{ color: '#64748b', textAlign: 'left' }}>Secure your tickets instantly or join the high-priority waitlist matrix if full.</p>
+      <p style={{ color: '#64748b', textAlign: 'left', marginBottom: '1.5rem' }}>Find, filter, and secure tickets instantly for upcoming events.</p>
       
+      {/* Search & Filter Inputs Panel */}
+      <div style={styles.filterBar}>
+        <input 
+          type="text" 
+          placeholder="Search by event title or description..." 
+          style={styles.input}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <select 
+          style={styles.select}
+          value={selectedLocation}
+          onChange={(e) => setSelectedLocation(e.target.value)}
+        >
+          {locations.map((loc, idx) => (
+            <option key={idx} value={loc}>{loc === 'All' ? '🌍 All Locations' : `📍 ${loc}`}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Events Render Grid */}
       <div style={styles.grid}>
-        {events.length === 0 ? (
-          <p>No active events scheduled at the moment.</p>
+        {filteredEvents.length === 0 ? (
+          <p style={{ color: '#64748b', gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
+            No events match your current search criteria.
+          </p>
         ) : (
-          events.map(evt => (
+          filteredEvents.map(evt => (
             <div key={evt._id} style={styles.card}>
               <div>
                 <div style={styles.title}>{evt.title}</div>
