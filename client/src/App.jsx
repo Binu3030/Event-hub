@@ -107,8 +107,30 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify'; // Import ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // Import default CSS styles
+
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -124,14 +146,9 @@ function App() {
         <Navbar />
         <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
           <Routes>
-            {/* Redirect root path to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
-            {/* Public Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* Protected Route: Accessible by any logged-in user */}
             <Route 
               path="/dashboard" 
               element={
@@ -140,8 +157,6 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            
-            {/* Protected Route: Booking tracker for logged-in attendees/organizers */}
             <Route 
               path="/my-bookings" 
               element={
@@ -150,8 +165,6 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            
-            {/* Protected Route: Restricted strictly to organizers */}
             <Route 
               path="/create-event" 
               element={
@@ -160,11 +173,20 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            
-            {/* Fallback 404 Route */}
             <Route path="*" element={<div style={{ textAlign: 'center', marginTop: '2rem' }}><h3>404: Page Not Found</h3></div>} />
           </Routes>
         </main>
+        
+        {/* Global Toast Notification System */}
+        <ToastContainer 
+          position="top-right" 
+          autoClose={4000} 
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          pauseOnHover
+          theme="colored"
+        />
       </div>
     </Router>
   );
