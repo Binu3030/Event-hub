@@ -1,94 +1,88 @@
-import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
-  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role'); // Assumes 'organizer' or 'attendee'
 
-  const handleLogoutClick = () => {
-    logout();
-    navigate('/login'); // Instantly kick user back to clean login state
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    alert('Logged out successfully!');
+    navigate('/login');
   };
 
-  const styles = {
-    nav: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '1rem 2rem',
-      backgroundColor: '#1e293b',
-      color: '#ffffff',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    },
-    logo: {
-      fontSize: '1.5rem',
-      fontWeight: 'bold',
-      letterSpacing: '0.5px',
-      color: '#ffffff',
-      textDecoration: 'none'
-    },
-    linksContainer: {
-      display: 'flex',
-      gap: '1.5rem',
-      alignItems: 'center'
-    },
-    link: {
-      color: '#cbd5e1',
-      textDecoration: 'none',
-      fontSize: '0.95rem',
-      transition: 'color 0.2s'
-    },
-    btn: {
-      backgroundColor: '#ef4444',
-      color: '#ffffff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '0.9rem'
-    },
-    userBadge: {
-      fontSize: '0.85rem',
-      backgroundColor: '#334155',
-      padding: '0.25rem 0.6rem',
-      borderRadius: '12px',
-      color: '#38bdf8',
-      textTransform: 'capitalize'
-    }
-  };
+  const linkStyle = ({ isActive }) => ({
+    color: isActive ? '#2563eb' : '#475569',
+    fontWeight: isActive ? 'bold' : 'normal',
+    textDecoration: 'none',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '4px',
+    backgroundColor: isActive ? '#eff6ff' : 'transparent',
+    transition: 'all 0.2s ease'
+  });
 
   return (
-    <nav style={styles.nav}>
-      <Link to="/dashboard" style={styles.logo}>🎉 EventHub</Link>
-      
-      <div style={styles.linksContainer}>
-        <Link to="/dashboard" style={styles.link}>Browse Events</Link>
-        
-        {user ? (
-          <>
-            {/* My Bookings option visible for all authenticated users */}
-            <Link to="/my-bookings" style={styles.link}>My Bookings</Link>
+    <nav style={{ 
+      backgroundColor: '#ffffff', 
+      borderBottom: '1px solid #e2e8f0', 
+      padding: '1rem 2rem', 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center',
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <h1 
+          onClick={() => navigate(token ? '/dashboard' : '/login')} 
+          style={{ margin: 0, fontSize: '1.4rem', cursor: 'pointer', color: '#1e293b' }}
+        >
+          🎟️ EventHub
+        </h1>
 
-            {/* Create Event option visible strictly to Organizers */}
-            {user.role === 'organizer' && (
-              <Link to="/create-event" style={styles.link}>➕ Create Event</Link>
+        {token && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <NavLink to="/dashboard" style={linkStyle}>
+              Explore Events
+            </NavLink>
+            <NavLink to="/my-bookings" style={linkStyle}>
+              My Bookings
+            </NavLink>
+            {role === 'organizer' && (
+              <NavLink to="/create-event" style={linkStyle}>
+                + Create Event
+              </NavLink>
             )}
-            
-            <span style={styles.userBadge}>
-              {user.name} ({user.role})
-            </span>
-            
-            <button onClick={handleLogoutClick} style={styles.btn}>
-              Logout
-            </button>
-          </>
+          </div>
+        )}
+      </div>
+
+      <div>
+        {token ? (
+          <button 
+            onClick={handleLogout}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#ef4444',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Logout
+          </button>
         ) : (
-          <>
-            {/* Navigation links for guests */}
-            <Link to="/login" style={styles.link}>Login</Link>
-            <Link to="/register" style={styles.link}>Register</Link>
-          </>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <NavLink to="/login" style={linkStyle}>
+              Login
+            </NavLink>
+            <NavLink to="/register" style={linkStyle}>
+              Register
+            </NavLink>
+          </div>
         )}
       </div>
     </nav>
