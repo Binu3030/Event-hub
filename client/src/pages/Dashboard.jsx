@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import API from '../api';
 
 const Dashboard = () => {
@@ -8,7 +9,7 @@ const Dashboard = () => {
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('All');
-  const [sortBy, setSortBy] = useState('dateAsc'); // 'dateAsc', 'dateDesc', 'priceAsc', 'priceDesc'
+  const [sortBy, setSortBy] = useState('dateAsc');
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -17,7 +18,7 @@ const Dashboard = () => {
       setEvents(response.data);
     } catch (err) {
       console.error("Error loading events:", err);
-      alert("Failed to load events. Please try again later.");
+      toast.error("Failed to load events. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -30,10 +31,10 @@ const Dashboard = () => {
   const handleBookTicket = async (eventId) => {
     try {
       const response = await API.post(`/bookings/${eventId}`);
-      alert(response.data.message || "🎉 Ticket booked successfully!");
+      toast.success(response.data.message || "🎉 Ticket booked successfully!");
       fetchEvents(); 
     } catch (err) {
-      alert(err.response?.data?.error || "Booking request dropped.");
+      toast.error(err.response?.data?.error || "Booking request dropped.");
     }
   };
 
