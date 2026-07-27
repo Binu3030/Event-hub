@@ -1,89 +1,95 @@
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+'use client';
 
-const Navbar = () => {
-  const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+import React from 'react';
+import Link from 'next/link'; // Replaces 'react-router-dom' Link
+import { useRouter } from 'next/router';
+
+const Navbar = ({ user, onLogout }) => {
+  const router = useRouter();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    toast.info('Logged out successfully.');
-    navigate('/login');
+    localStorage.removeItem('user');
+    if (onLogout) onLogout();
+    router.push('/login');
   };
 
-  const linkStyle = ({ isActive }) => ({
-    color: isActive ? '#2563eb' : '#475569',
-    fontWeight: isActive ? 'bold' : 'normal',
-    textDecoration: 'none',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '4px',
-    backgroundColor: isActive ? '#eff6ff' : 'transparent',
-    transition: 'all 0.2s ease'
-  });
-
   return (
-    <nav style={{ 
-      backgroundColor: '#ffffff', 
-      borderBottom: '1px solid #e2e8f0', 
-      padding: '1rem 2rem', 
-      display: 'flex', 
-      justifyContent: 'space-between', 
+    <nav style={{
+      display: 'flex',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+      padding: '1rem 2rem',
+      backgroundColor: '#0f172a',
+      color: '#ffffff'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-        <h1 
-          onClick={() => navigate(token ? '/dashboard' : '/login')} 
-          style={{ margin: 0, fontSize: '1.4rem', cursor: 'pointer', color: '#1e293b' }}
-        >
-          🎟️ EventHub
-        </h1>
-
-        {token && (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <NavLink to="/dashboard" style={linkStyle}>
-              Explore Events
-            </NavLink>
-            <NavLink to="/my-bookings" style={linkStyle}>
-              My Bookings
-            </NavLink>
-            {role === 'organizer' && (
-              <NavLink to="/create-event" style={linkStyle}>
-                + Create Event
-              </NavLink>
-            )}
-          </div>
-        )}
+      <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
+        <Link href="/Dashboard" style={{ color: '#fff', textDecoration: 'none' }}>
+          🎉 EventHub
+        </Link>
       </div>
 
-      <div>
-        {token ? (
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+        <Link 
+          href="/Dashboard" 
+          style={{ 
+            color: router.pathname === '/Dashboard' ? '#38bdf8' : '#cbd5e1', 
+            textDecoration: 'none' 
+          }}
+        >
+          Explore Events
+        </Link>
+
+        {user?.role === 'organizer' && (
+          <Link 
+            href="/CreateEvent" 
+            style={{ 
+              color: router.pathname === '/CreateEvent' ? '#38bdf8' : '#cbd5e1', 
+              textDecoration: 'none' 
+            }}
+          >
+            Create Event
+          </Link>
+        )}
+
+        <Link 
+          href="/MyBookings" 
+          style={{ 
+            color: router.pathname === '/MyBookings' ? '#38bdf8' : '#cbd5e1', 
+            textDecoration: 'none' 
+          }}
+        >
+          My Bookings
+        </Link>
+
+        {user ? (
           <button 
             onClick={handleLogout}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.4rem 0.8rem',
               backgroundColor: '#ef4444',
-              color: '#ffffff',
+              color: '#fff',
               border: 'none',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
             }}
           >
             Logout
           </button>
         ) : (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <NavLink to="/login" style={linkStyle}>
-              Login
-            </NavLink>
-            <NavLink to="/register" style={linkStyle}>
-              Register
-            </NavLink>
-          </div>
+          <Link 
+            href="/login" 
+            style={{ 
+              color: '#fff', 
+              backgroundColor: '#2563eb', 
+              padding: '0.4rem 0.8rem', 
+              borderRadius: '4px', 
+              textDecoration: 'none' 
+            }}
+          >
+            Login
+          </Link>
         )}
       </div>
     </nav>

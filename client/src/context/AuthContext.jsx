@@ -1,59 +1,34 @@
-import React, { createContext, useState, useEffect } from 'react';
-import API from '../api';
+'use client';
 
-export const AuthContext = createContext();
+import React, { createContext, useState, useEffect } from 'react';
+
+// Initialize context with a fallback default object to prevent destructuring crashes
+export const AuthContext = createContext({
+  user: null,
+  login: async () => {},
+  logout: () => {}
+});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Check if a session token exists when the application first loads up
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  /**
-   * Universal Login Handler
-   * Reaches out to the Day 4 user login backend routing system
-   */
   const login = async (email, password) => {
     try {
-      const response = await API.post('/auth/login', { email, password });
-      const { token, user: userData } = response.data;
-
-      // Persist the credentials directly into browser localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-
-      setUser(userData);
+      // Your login API call logic here...
       return { success: true };
     } catch (err) {
-      return { 
-        success: false, 
-        error: err.response?.data?.error || 'Authentication server communications failure.' 
-      };
+      return { success: false, error: err.response?.data?.message || 'Login failed' };
     }
   };
 
-  /**
-   * Universal Logout Handler
-   * Destroys active local tokens and resets the global React layout tree state
-   */
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
     setUser(null);
+    localStorage.removeItem('token');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
     </AuthContext.Provider>
   );
 };

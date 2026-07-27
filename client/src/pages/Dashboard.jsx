@@ -1,10 +1,14 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import API from '../api';
+import ProtectedRoute from '../components/ProtectedRoute'; // Adjust relative path if needed
+import API from '../api'; // Adjust path if your api wrapper is at src/api
 
 const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false); // Prevents hydration error for dates
   
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,6 +29,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     fetchEvents();
   }, []);
 
@@ -109,7 +114,11 @@ const Dashboard = () => {
             <div key={evt._id} style={{ border: '1px solid #e2e8f0', padding: '1.5rem', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ marginTop: 0, color: '#0f172a' }}>{evt.title}</h3>
               <p style={{ margin: '0.25rem 0', color: '#475569' }}>📍 {evt.location}</p>
-              <p style={{ margin: '0.25rem 0', color: '#475569' }}>📅 {new Date(evt.date).toLocaleDateString()}</p>
+              
+              <p style={{ margin: '0.25rem 0', color: '#475569' }}>
+                📅 {isMounted ? new Date(evt.date).toLocaleDateString() : ''}
+              </p>
+              
               <p style={{ fontWeight: 'bold', color: '#2563eb', margin: '0.5rem 0' }}>
                 {evt.price ? `Rs. ${evt.price}` : 'Free Entry'}
               </p>
@@ -141,4 +150,11 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+// Export wrapped inside ProtectedRoute
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
+  );
+}

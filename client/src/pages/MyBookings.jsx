@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import API from '../api';
+import API from '../src/api';
 import MyBookings from './pages/MyBookings';
 
 const MyBookings = () => {
@@ -8,7 +8,7 @@ const MyBookings = () => {
 
   const fetchMyBookings = async () => {
     try {
-      const response = await API.get('/bookings/my-bookings');
+      const response = await API.get('/bookings/MyBookings');
       setBookings(response.data);
     } catch (err) {
       console.error("Error fetching bookings:", err);

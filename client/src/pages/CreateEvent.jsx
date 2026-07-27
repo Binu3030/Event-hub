@@ -1,9 +1,12 @@
+'use client'; // Marks this as a client component in Next.js
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import API from '../api';
+import { useRouter } from 'next/router'; // Replaces useNavigate from react-router-dom
+import API from '../src/api'; // Adjust the import path based on your project structure
 
 const CreateEvent = () => {
-  const navigate = useNavigate();
+  const router = useRouter(); // Initialize Next.js router
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -57,7 +60,9 @@ const CreateEvent = () => {
         availableSeats: formData.totalSeats
       });
       alert('🎉 Event created successfully!');
-      navigate('/dashboard');
+      
+      // Next.js client-side redirection
+      router.push('/dashboard'); 
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create event.');
     } finally {

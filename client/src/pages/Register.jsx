@@ -1,28 +1,52 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import API from '../api';
+'use client';
 
-const Register = () => {
-  const navigate = useNavigate();
+import React, { useState, useContext } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import { AuthContext } from '../context/AuthContext';
+
+export default function RegisterPage() {
+  const { register } = useContext(AuthContext);
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'attendee' // Default role
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Email format validation helper
+  const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  // Password rules validation helper
+  const isPasswordStrong = (pwd) => {
+    // Min 8 chars, at least 1 uppercase, 1 lowercase, 1 number
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(pwd);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Client-side validation check
+    // 1. Email format check
+    if (!isValidEmail(formData.email)) {
+      setError('Please enter a valid email address (e.g. user@gmail.com).');
+      return;
+    }
+
+    // 2. Password strength check
+    if (!isPasswordStrong(formData.password)) {
+      setError('Password must be at least 8 characters long and include uppercase, lowercase, and numbers.');
+      return;
+    }
+
+    // 3. Password match check
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -31,192 +55,110 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Reaches out to your Day 4 User Registration backend route
-      await API.post('/auth/register', {
+      const result = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role
       });
 
-      alert('Registration successful! Please log in with your new credentials.');
-      navigate('/login'); // Send them to the login screen
-    } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
-    } finally {
       setLoading(false);
-    }
-  };
 
-  const styles = {
-    container: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '75vh',
-      backgroundColor: '#f8fafc'
-    },
-    card: {
-      backgroundColor: '#ffffff',
-      padding: '2.5rem',
-      borderRadius: '8px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      width: '100%',
-      maxWidth: '450px'
-    },
-    title: {
-      fontSize: '1.75rem',
-      fontWeight: 'bold',
-      color: '#1e293b',
-      marginBottom: '1.5rem',
-      textAlign: 'center'
-    },
-    group: {
-      marginBottom: '1.15rem',
-      textAlign: 'left'
-    },
-    label: {
-      display: 'block',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      color: '#475569',
-      marginBottom: '0.5rem'
-    },
-    input: {
-      width: '100%',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      border: '1px solid #cbd5e1',
-      fontSize: '1rem',
-      boxSizing: 'border-box'
-    },
-    select: {
-      width: '100%',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      border: '1px solid #cbd5e1',
-      backgroundColor: '#ffffff',
-      fontSize: '1rem',
-      boxSizing: 'border-box'
-    },
-    btn: {
-      width: '100%',
-      padding: '0.75rem',
-      backgroundColor: '#2563eb',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '6px',
-      fontSize: '1rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      marginTop: '0.75rem'
-    },
-    alert: {
-      backgroundColor: '#fef2f2',
-      color: '#dc2626',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      fontSize: '0.875rem',
-      marginBottom: '1.25rem',
-      border: '1px solid #fca5a5'
-    },
-    footerText: {
-      textAlign: 'center',
-      marginTop: '1.25rem',
-      fontSize: '0.9rem',
-      color: '#64748b'
-    },
-    link: {
-      color: '#2563eb',
-      textDecoration: 'none',
-      fontWeight: '600'
+      if (result?.success) {
+        router.push('/dashboard');
+      } else {
+        setError(result?.error || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError('An error occurred during registration.');
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Create Account</h2>
-        
-        {error && <div style={styles.alert}>{error}</div>}
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '1rem' }}>
+      <div style={{ backgroundColor: '#ffffff', padding: '2.5rem', borderRadius: '8px', width: '100%', maxWidth: '440px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', textAlign: 'center', color: '#0f172a', marginBottom: '0.5rem' }}>Create an Account</h2>
+        <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Join EventHub to explore and manage live events.</p>
+
+        {error && (
+          <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
-          <div style={styles.group}>
-            <label style={styles.label}>Full Name</label>
-            <input 
-              type="text" 
-              name="name"
-              required 
-              style={styles.input}
+          {/* Full Name */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Full Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Binu Magar"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
               value={formData.name}
-              onChange={handleChange}
-              placeholder="John Doe"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
 
-          <div style={styles.group}>
-            <label style={styles.label}>Email Address</label>
-            <input 
-              type="email" 
-              name="email"
-              required 
-              style={styles.input}
+          {/* Email */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Email Address *</label>
+            <input
+              type="email"
+              required
+              placeholder="name@gmail.com"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
               value={formData.email}
-              onChange={handleChange}
-              placeholder="name@domain.com"
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Must be a valid email (e.g. Gmail, Yahoo, or custom domain).</span>
           </div>
 
-          <div style={styles.group}>
-            <label style={styles.label}>Account Role</label>
-            <select 
-              name="role" 
-              style={styles.select} 
-              value={formData.role} 
-              onChange={handleChange}
-            >
-              <option value="attendee">Attendee (Buy & Manage Tickets)</option>
-              <option value="organizer">Organizer (Host & Manage Events)</option>
-            </select>
-          </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>Password</label>
-            <input 
-              type="password" 
-              name="password"
-              required 
-              style={styles.input}
+          {/* Password */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Password *</label>
+            <input
+              type="password"
+              required
+              placeholder="••••••••"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
               value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+              Must contain at least 8 characters, 1 uppercase, 1 lowercase, and 1 number.
+            </div>
           </div>
 
-          <div style={styles.group}>
-            <label style={styles.label}>Confirm Password</label>
-            <input 
-              type="password" 
-              name="confirmPassword"
-              required 
-              style={styles.input}
+          {/* Confirm Password */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Confirm Password *</label>
+            <input
+              type="password"
+              required
+              placeholder="••••••••"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
               value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
             />
           </div>
 
-          <button type="submit" disabled={loading} style={styles.btn}>
-            {loading ? 'Creating Account...' : 'Sign Up'}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+          >
+            {loading ? 'Creating Account...' : 'Register'}
           </button>
         </form>
 
-        <p style={styles.footerText}>
-          Already have an account? <Link to="/login" style={styles.link}>Sign In</Link>
+        <p style={{ textAlign: 'center', fontSize: '0.875rem', color: '#64748b', marginTop: '1.5rem' }}>
+          Already have an account?{' '}
+          <Link href="/login" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none' }}>
+            Sign In
+          </Link>
         </p>
       </div>
     </div>
   );
-};
-
-export default Register;
+}

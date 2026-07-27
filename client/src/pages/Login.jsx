@@ -1,40 +1,62 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+'use client';
 
-const Login = () => {
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate(); // Initialize the redirect function
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+import React, { useState } from 'react';
+import { useRouter } from 'next/router';
+import { toast } from 'react-toastify';
+import ProtectedRoute from '../components/ProtectedRoute'; // Adjust relative path if needed
+import API from '../api'; // Adjust path if your api file is at src/api
+
+const CreateEventForm = () => {
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    location: '',
+    date: '',
+    price: '',
+    availableSeats: ''
+  });
+
   const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
-    const result = await login(email, password);
-    setLoading(false);
+    try {
+      const payload = {
+        ...formData,
+        price: formData.price ? Number(formData.price) : 0,
+        availableSeats: Number(formData.availableSeats)
+      };
 
-    if (!result.success) {
-      setError(result.error);
-    } else {
-      // Programmatic routing shift right into the application dashboard grid
-      navigate('/dashboard'); 
+      const response = await API.post('/events', payload);
+      toast.success(response.data.message || '🎉 Event created successfully!');
+      
+      // Redirect to dashboard to view the newly created event
+      router.push('/Dashboard');
+    } catch (err) {
+      console.error('Error creating event:', err);
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to create event.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Modular styling rules for modern card layout
   const styles = {
     container: {
       display: 'flex',
       justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '70vh',
-      backgroundColor: '#f8fafc'
+      padding: '2rem 1rem'
     },
     card: {
       backgroundColor: '#ffffff',
@@ -42,23 +64,31 @@ const Login = () => {
       borderRadius: '8px',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       width: '100%',
-      maxWidth: '400px'
+      maxWidth: '550px'
     },
     title: {
       fontSize: '1.75rem',
       fontWeight: 'bold',
-      color: '#1e293b',
+      color: '#0f172a',
+      marginBottom: '0.5rem'
+    },
+    subtitle: {
+      color: '#64748b',
       marginBottom: '1.5rem',
-      textAlign: 'center'
+      fontSize: '0.95rem'
     },
     group: {
       marginBottom: '1.25rem'
+    },
+    row: {
+      display: 'flex',
+      gap: '1rem'
     },
     label: {
       display: 'block',
       fontSize: '0.875rem',
       fontWeight: '600',
-      color: '#475569',
+      color: '#334155',
       marginBottom: '0.5rem'
     },
     input: {
@@ -67,6 +97,16 @@ const Login = () => {
       borderRadius: '6px',
       border: '1px solid #cbd5e1',
       fontSize: '1rem',
+      boxSizing: 'border-box'
+    },
+    textarea: {
+      width: '100%',
+      padding: '0.75rem',
+      borderRadius: '6px',
+      border: '1px solid #cbd5e1',
+      fontSize: '1rem',
+      minHeight: '100px',
+      resize: 'vertical',
       boxSizing: 'border-box'
     },
     btn: {
@@ -79,53 +119,98 @@ const Login = () => {
       fontSize: '1rem',
       fontWeight: '600',
       cursor: 'pointer',
-      marginTop: '0.5rem'
-    },
-    alert: {
-      backgroundColor: '#fef2f2',
-      color: '#dc2626',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      fontSize: '0.875rem',
-      marginBottom: '1rem',
-      border: '1px solid #fca5a5'
+      marginTop: '1rem'
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2 style={styles.title}>Account Login</h2>
-        
-        {error && <div style={styles.alert}>{error}</div>}
+        <h2 style={styles.title}>Host a New Event</h2>
+        <p style={styles.subtitle}>Fill in the event details below to publish it to EventHub.</p>
 
         <form onSubmit={handleSubmit}>
           <div style={styles.group}>
-            <label style={styles.label}>Email Address</label>
-            <input 
-              type="email" 
-              required 
+            <label style={styles.label}>Event Title *</label>
+            <input
+              type="text"
+              name="title"
+              required
+              placeholder="e.g. Kathmandu Tech Summit 2026"
               style={styles.input}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@domain.com"
+              value={formData.title}
+              onChange={handleChange}
             />
           </div>
 
           <div style={styles.group}>
-            <label style={styles.label}>Password</label>
-            <input 
-              type="password" 
-              required 
+            <label style={styles.label}>Location / Venue *</label>
+            <input
+              type="text"
+              name="location"
+              required
+              placeholder="e.g. Pokhara City Hall"
               style={styles.input}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              value={formData.location}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.group}>
+            <label style={styles.label}>Event Date & Time *</label>
+            <input
+              type="datetime-local"
+              name="date"
+              required
+              style={styles.input}
+              value={formData.date}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.row}>
+            <div style={{ ...styles.group, flex: 1 }}>
+              <label style={styles.label}>Ticket Price (NPR)</label>
+              <input
+                type="number"
+                name="price"
+                min="0"
+                placeholder="0 for Free"
+                style={styles.input}
+                value={formData.price}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div style={{ ...styles.group, flex: 1 }}>
+              <label style={styles.label}>Available Seats *</label>
+              <input
+                type="number"
+                name="availableSeats"
+                required
+                min="1"
+                placeholder="e.g. 100"
+                style={styles.input}
+                value={formData.availableSeats}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div style={styles.group}>
+            <label style={styles.label}>Event Description *</label>
+            <textarea
+              name="description"
+              required
+              placeholder="Provide a brief overview, agenda, or highlights..."
+              style={styles.textarea}
+              value={formData.description}
+              onChange={handleChange}
             />
           </div>
 
           <button type="submit" disabled={loading} style={styles.btn}>
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Publishing Event...' : '🚀 Publish Event'}
           </button>
         </form>
       </div>
@@ -133,4 +218,11 @@ const Login = () => {
   );
 };
 
-export default Login;
+// Export wrapped with ProtectedRoute (Admin / Organizer restricted)
+export default function CreateEventPage() {
+  return (
+    <ProtectedRoute allowedRoles={['admin', 'organizer']}>
+      <CreateEventForm />
+    </ProtectedRoute>
+  );
+}

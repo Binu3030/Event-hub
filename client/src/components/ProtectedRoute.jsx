@@ -1,36 +1,34 @@
-import React, { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
+// client/src/components/ProtectedRoute.jsx
+'use client';
+
+import { useContext, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { AuthContext } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading } = useContext(AuthContext);
+  const router = useRouter();
 
-  // While checking the authentication state, show a clean loading indicator
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <h3>Loading session...</h3>
-      </div>
-    );
+  useEffect(() => {
+    if (!loading) {
+      // 1. Not logged in -> Redirect to Login
+      if (!user) {
+        router.replace('/login');
+        return;
+      }
+
+      // 2. Role restriction check (e.g. allowedRoles=['admin', 'organizer'])
+      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        router.replace('/dashboard'); // Unauthorized roles get sent back to dashboard
+      }
+    }
+  }, [user, loading, allowedRoles, router]);
+
+  if (loading || !user) {
+    return <div style={{ textAlign: 'center', padding: '3rem' }}>Verifying permissions...</div>;
   }
 
-  // Rule 1: If not logged in, redirect straight to the login portal
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Rule 2: If roles are specified, ensure the current user's role is authorized
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '3rem', padding: '2rem' }}>
-        <h2 style={{ color: '#ef4444' }}>⛔ Access Denied</h2>
-        <p style={{ color: '#64748b' }}>You do not possess the required permissions to view this administrative resource.</p>
-      </div>
-    );
-  }
-
-  // If all checks pass, render the target child component safely
-  return children;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
