@@ -24,16 +24,16 @@ const Navbar = ({ user, onLogout }) => {
       color: '#ffffff'
     }}>
       <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-        <Link href="/Dashboard" style={{ color: '#fff', textDecoration: 'none' }}>
+        <Link href="/dashboard" style={{ color: '#fff', textDecoration: 'none' }}>
           🎉 EventHub
         </Link>
       </div>
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
         <Link 
-          href="/Dashboard" 
+          href="/dashboard" 
           style={{ 
-            color: router.pathname === '/Dashboard' ? '#38bdf8' : '#cbd5e1', 
+            color: router.pathname === '/dashboard' ? '#38bdf8' : '#cbd5e1', 
             textDecoration: 'none' 
           }}
         >
@@ -42,9 +42,9 @@ const Navbar = ({ user, onLogout }) => {
 
         {user?.role === 'organizer' && (
           <Link 
-            href="/CreateEvent" 
+            href="/create-event" 
             style={{ 
-              color: router.pathname === '/CreateEvent' ? '#38bdf8' : '#cbd5e1', 
+              color: router.pathname === '/create-event' ? '#38bdf8' : '#cbd5e1', 
               textDecoration: 'none' 
             }}
           >
@@ -53,9 +53,9 @@ const Navbar = ({ user, onLogout }) => {
         )}
 
         <Link 
-          href="/MyBookings" 
+          href="/my-bookings" 
           style={{ 
-            color: router.pathname === '/MyBookings' ? '#38bdf8' : '#cbd5e1', 
+            color: router.pathname === '/my-bookings' ? '#38bdf8' : '#cbd5e1', 
             textDecoration: 'none' 
           }}
         >

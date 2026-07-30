@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useContext } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -13,20 +11,17 @@ export default function RegisterPage() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: '',
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Email format validation helper
   const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  // Password rules validation helper
   const isPasswordStrong = (pwd) => {
-    // Min 8 chars, at least 1 uppercase, 1 lowercase, 1 number
     return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(pwd);
   };
 
@@ -34,21 +29,13 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // 1. Email format check
     if (!isValidEmail(formData.email)) {
-      setError('Please enter a valid email address (e.g. user@gmail.com).');
+      setError('Please enter a valid email address.');
       return;
     }
 
-    // 2. Password strength check
     if (!isPasswordStrong(formData.password)) {
       setError('Password must be at least 8 characters long and include uppercase, lowercase, and numbers.');
-      return;
-    }
-
-    // 3. Password match check
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
       return;
     }
 
@@ -61,16 +48,17 @@ export default function RegisterPage() {
         password: formData.password,
       });
 
-      setLoading(false);
-
       if (result?.success) {
-        router.push('/dashboard');
+        // Redirect to homepage immediately after successful auto-login
+        router.replace('/'); 
       } else {
-        setError(result?.error || 'Registration failed. Please try again.');
+        setError(result?.error || 'Registration failed.');
       }
     } catch (err) {
+      console.error(err);
+      setError('An unexpected error occurred during registration.');
+    } finally {
       setLoading(false);
-      setError('An error occurred during registration.');
     }
   };
 
@@ -87,7 +75,6 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Full Name */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Full Name *</label>
             <input
@@ -100,7 +87,6 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Email */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Email Address *</label>
             <input
@@ -111,42 +97,43 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Must be a valid email (e.g. Gmail, Yahoo, or custom domain).</span>
           </div>
 
-          {/* Password */}
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Password *</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-              Must contain at least 8 characters, 1 uppercase, 1 lowercase, and 1 number.
-            </div>
-          </div>
-
-          {/* Confirm Password */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Confirm Password *</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-            />
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Password *</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="••••••••"
+                style={{ width: '100%', padding: '0.75rem', paddingRight: '2.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#64748b' }}
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
           >
             {loading ? 'Creating Account...' : 'Register'}
           </button>

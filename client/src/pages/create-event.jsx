@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router'; // Replaces useNavigate from react-router-dom
-import API from '../src/api'; // Adjust the import path based on your project structure
+import API from '../api'; // Adjust the import path based on your project structure
 
 const CreateEvent = () => {
   const router = useRouter(); // Initialize Next.js router

@@ -1,41 +1,57 @@
+require('dotenv').config(); // 👈 MANDATORY: Must be at line 1 to load environment variables
+
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db.js');
-const bookingRoutes = require('./routes/bookingRoutes');
 
-// Import your custom routing blueprints built over the last few days
+// Route Imports
 const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
 
-// Instantiate the core Express application engine instance
 const app = express();
 
-// 1. Establish Database Connection Cluster Link
-connectDB();
+// Global Middleware Configurations
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// 2. Global Middleware Configurations
-app.use(cors());          // Allows your React application to make cross-origin network calls
-app.use(express.json());  // Native body parser to handle incoming JSON request payloads
+// Express json parser
+app.use(express.json());
 
-
+// System API Endpoints Mapping
+app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
 
-
-
-// 3. System API Endpoints Gateway Mapping
-app.use('/api/auth', authRoutes);     // Routes handled by Day 3 Auth Engine
-app.use('/api/events', eventRoutes);   // Routes handled by Day 4 Event Engine
-
-// 4. Base Status Endpoint (Used for quick structural system health checks)
+// Base Status Endpoint
 app.get('/', (req, res) => {
-  res.json({ status: "Online", framework: "EventHub MERN Academic Core Engine Running" });
+  return res.json({ status: 'Online', framework: 'EventHub MERN Core Engine Running' });
 });
 
-// 5. Initialize the Runtime Network Listener Port
-const PORT = 5000;
-app.listen(PORT, () => {
-  console.log("======================================================");
-  console.log(`SERVER SYSTEM ONLINE: Listening on Local Network Port ${PORT}`);
-  console.log(`Diagnostic Check: Access http://localhost:${PORT}/ in browser`);
-  console.log("======================================================");
+// Global 404 Fallback
+app.use((req, res) => {
+  return res.status(404).json({ message: `Route ${req.originalUrl} not found.` });
 });
+
+const PORT = process.env.PORT || 5001;
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log('======================================================');
+      console.log(`SERVER SYSTEM ONLINE: Listening on Port ${PORT}`);
+      console.log(`Diagnostic Check: Access http://localhost:${PORT}/ in browser`);
+      console.log('======================================================');
+    });
+  } catch (err) {
+    console.error('Server failed to start:', err);
+    process.exit(1);
+  }
+};
+
+startServer();

@@ -6,16 +6,17 @@ const mongoose = require('mongoose');
  */
 const connectDB = async () => {
   try {
-    // Connects to local MongoDB instance under the unique database context name 'eventhub_db'
-    const MONGO_URI = "mongodb://127.0.0.1:27017/eventhub_db";
-    
+    const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/eventhub_db";
+
+    console.log(`Connecting to MongoDB at ${MONGO_URI}...`);
     await mongoose.connect(MONGO_URI);
+
     console.log("======================================================");
     console.log("SUCCESS: EventHub Database Cluster Connection Active.");
     console.log("======================================================");
   } catch (err) {
     console.error("CRITICAL ERROR: Database link integration failure:", err.message);
-    // Exit process with failure code (1) to prevent the server from running in a broken state
+    console.error("Make sure MongoDB is running and MONGO_URI is configured correctly.");
     process.exit(1);
   }
 };

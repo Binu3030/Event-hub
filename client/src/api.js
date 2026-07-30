@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Link directly to your backend Express server running on port 5000
+// Use the same proxy path as Next.js rewrites or a configured backend URL.
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
 });
 
 // Automatically inject JWT session tokens into outgoing request headers

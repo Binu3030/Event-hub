@@ -39,7 +39,7 @@ export default function Home() {
           Sign In
         </Link>
         <Link 
-          href="/Register" 
+          href="/register" 
           style={{ 
             padding: '0.75rem 1.5rem', 
             backgroundColor: '#0f172a', 

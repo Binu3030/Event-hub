@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const JWT_SECRET = "super_secret_university_grading_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "super_secret_university_grading_key_2026";
 
 /**
  * POST /api/auth/register
@@ -14,30 +14,46 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // Check if the identity identifier profile is already registered
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({ error: "An account with this email already exists." });
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email and password are required.' });
     }
 
-    // Secure Hashing: Run 10 salt rounds to secure passwords cleanly
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ error: 'An account with this email already exists.' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save profile with empty tag vectors initialized for your future algorithm
     const newUser = await User.create({
       name,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashedPassword,
       role: role || 'Attendee',
-      interactedTags: {} 
+      interactedTags: {}
     });
 
-    res.status(201).json({ 
-      message: "Identity profile initialized successfully.", 
-      userId: newUser._id 
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'Identity profile initialized successfully.',
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role
+      }
     });
   } catch (err) {
-    res.status(500).json({ error: "Internal compilation failure during registration handling." });
+    console.error('Register route error:', err);
+    res.status(500).json({ error: 'Registration failed due to a server error.', details: err.message });
   }
 });
 

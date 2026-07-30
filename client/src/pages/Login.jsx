@@ -1,228 +1,95 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useRouter } from 'next/router';
-import { toast } from 'react-toastify';
-import ProtectedRoute from '../components/ProtectedRoute'; // Adjust relative path if needed
-import API from '../api'; // Adjust path if your api file is at src/api
+import Link from 'next/link';
+import { AuthContext } from '../context/AuthContext';
 
-const CreateEventForm = () => {
+export default function LoginPage() {
+  const { login } = useContext(AuthContext);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    location: '',
-    date: '',
-    price: '',
-    availableSeats: ''
+    email: '',
+    password: '',
   });
 
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
     try {
-      const payload = {
-        ...formData,
-        price: formData.price ? Number(formData.price) : 0,
-        availableSeats: Number(formData.availableSeats)
-      };
+      const result = await login(formData.email, formData.password);
 
-      const response = await API.post('/events', payload);
-      toast.success(response.data.message || '🎉 Event created successfully!');
-      
-      // Redirect to dashboard to view the newly created event
-      router.push('/Dashboard');
+      if (result?.success) {
+        // Redirect cleanly once login context is populated
+        router.replace('/');
+      } else {
+        setError(result?.error || 'Login failed. Please check your credentials.');
+      }
     } catch (err) {
-      console.error('Error creating event:', err);
-      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to create event.');
+      console.error(err);
+      setError('An error occurred during login.');
     } finally {
       setLoading(false);
     }
   };
 
-  const styles = {
-    container: {
-      display: 'flex',
-      justifyContent: 'center',
-      padding: '2rem 1rem'
-    },
-    card: {
-      backgroundColor: '#ffffff',
-      padding: '2.5rem',
-      borderRadius: '8px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      width: '100%',
-      maxWidth: '550px'
-    },
-    title: {
-      fontSize: '1.75rem',
-      fontWeight: 'bold',
-      color: '#0f172a',
-      marginBottom: '0.5rem'
-    },
-    subtitle: {
-      color: '#64748b',
-      marginBottom: '1.5rem',
-      fontSize: '0.95rem'
-    },
-    group: {
-      marginBottom: '1.25rem'
-    },
-    row: {
-      display: 'flex',
-      gap: '1rem'
-    },
-    label: {
-      display: 'block',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      color: '#334155',
-      marginBottom: '0.5rem'
-    },
-    input: {
-      width: '100%',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      border: '1px solid #cbd5e1',
-      fontSize: '1rem',
-      boxSizing: 'border-box'
-    },
-    textarea: {
-      width: '100%',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      border: '1px solid #cbd5e1',
-      fontSize: '1rem',
-      minHeight: '100px',
-      resize: 'vertical',
-      boxSizing: 'border-box'
-    },
-    btn: {
-      width: '100%',
-      padding: '0.75rem',
-      backgroundColor: '#2563eb',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '6px',
-      fontSize: '1rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      marginTop: '1rem'
-    }
-  };
-
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Host a New Event</h2>
-        <p style={styles.subtitle}>Fill in the event details below to publish it to EventHub.</p>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '1rem' }}>
+      <div style={{ backgroundColor: '#ffffff', padding: '2.5rem', borderRadius: '8px', width: '100%', maxWidth: '440px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', textAlign: 'center', color: '#0f172a', marginBottom: '0.5rem' }}>Welcome Back</h2>
+        <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Sign in to manage your events.</p>
+
+        {error && (
+          <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
-          <div style={styles.group}>
-            <label style={styles.label}>Event Title *</label>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Email Address *</label>
             <input
-              type="text"
-              name="title"
+              type="email"
               required
-              placeholder="e.g. Kathmandu Tech Summit 2026"
-              style={styles.input}
-              value={formData.title}
-              onChange={handleChange}
+              placeholder="name@gmail.com"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
-          <div style={styles.group}>
-            <label style={styles.label}>Location / Venue *</label>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Password *</label>
             <input
-              type="text"
-              name="location"
+              type="password"
               required
-              placeholder="e.g. Pokhara City Hall"
-              style={styles.input}
-              value={formData.location}
-              onChange={handleChange}
+              placeholder="••••••••"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
           </div>
 
-          <div style={styles.group}>
-            <label style={styles.label}>Event Date & Time *</label>
-            <input
-              type="datetime-local"
-              name="date"
-              required
-              style={styles.input}
-              value={formData.date}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div style={styles.row}>
-            <div style={{ ...styles.group, flex: 1 }}>
-              <label style={styles.label}>Ticket Price (NPR)</label>
-              <input
-                type="number"
-                name="price"
-                min="0"
-                placeholder="0 for Free"
-                style={styles.input}
-                value={formData.price}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div style={{ ...styles.group, flex: 1 }}>
-              <label style={styles.label}>Available Seats *</label>
-              <input
-                type="number"
-                name="availableSeats"
-                required
-                min="1"
-                placeholder="e.g. 100"
-                style={styles.input}
-                value={formData.availableSeats}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>Event Description *</label>
-            <textarea
-              name="description"
-              required
-              placeholder="Provide a brief overview, agenda, or highlights..."
-              style={styles.textarea}
-              value={formData.description}
-              onChange={handleChange}
-            />
-          </div>
-
-          <button type="submit" disabled={loading} style={styles.btn}>
-            {loading ? 'Publishing Event...' : '🚀 Publish Event'}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <p style={{ textAlign: 'center', fontSize: '0.875rem', color: '#64748b', marginTop: '1.5rem' }}>
+          Don't have an account?{' '}
+          <Link href="/register" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none' }}>
+            Create one
+          </Link>
+        </p>
       </div>
     </div>
-  );
-};
-
-// Export wrapped with ProtectedRoute (Admin / Organizer restricted)
-export default function CreateEventPage() {
-  return (
-    <ProtectedRoute allowedRoles={['admin', 'organizer']}>
-      <CreateEventForm />
-    </ProtectedRoute>
   );
 }
