@@ -1,3 +1,6 @@
+
+
+
 const mongoose = require('mongoose');
 
 /**
@@ -6,7 +9,7 @@ const mongoose = require('mongoose');
  */
 const connectDB = async () => {
   try {
-    const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/eventhub_db";
+    const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/eventhub";
 
     console.log(`Connecting to MongoDB at ${MONGO_URI}...`);
     await mongoose.connect(MONGO_URI);
