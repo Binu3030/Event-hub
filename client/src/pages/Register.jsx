@@ -49,8 +49,8 @@ export default function RegisterPage() {
       });
 
       if (result?.success) {
-        // Redirect to homepage immediately after successful auto-login
-        router.replace('/'); 
+        // Redirect to login page after successful registration
+        router.replace('/login'); 
       } else {
         setError(result?.error || 'Registration failed.');
       }
