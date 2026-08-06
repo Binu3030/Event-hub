@@ -1,353 +1,210 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
-import { AuthContext } from '../context/AuthContext';
 
-export default function CreateEventPage() {
-  const { user, loading: authLoading } = useContext(AuthContext);
-  const router = useRouter();
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: 'General',
-    location: '',
-    date: '',
-    capacity: '',
-    tags: ''
-  });
+export default function HomePage() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  // Handle client-side redirect for unauthorized users
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'admin')) {
-      // Optional: Auto-redirect or handle access inline
-    }
-  }, [user, authLoading]);
+    const fetchUpcomingEvents = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/events`);
+        const eventData = Array.isArray(res.data)
+          ? res.data
+          : res.data.events || [];
+        setEvents(eventData.slice(0, 6));
+      } catch (err) {
+        console.error('Failed to load upcoming events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      // Format payload: Parse capacity to Number and tags to a clean string array
-      const payload = {
-        ...formData,
-        capacity: Number(formData.capacity),
-        tags: formData.tags
-          ? formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-          : []
-      };
-
-      await axios.post('/api/events', payload);
-      router.push('/events'); // Redirect to events catalog
-    } catch (err) {
-      console.error('Create Event Error:', err);
-      setError(
-        err.response?.data?.error || 'System error compiling event data schema initialization.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Render loading indicator while auth status resolves
-  if (authLoading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '4rem 0', color: '#64748b', fontSize: '0.95rem' }}>
-        Verifying administrator permissions...
-      </div>
-    );
-  }
-
-  // Restrict access strictly to logged-in Admin users
-  if (!user || user.role !== 'admin') {
-    return (
-      <div
-        style={{
-          maxWidth: '550px',
-          margin: '4rem auto',
-          textAlign: 'center',
-          padding: '2.5rem 2rem',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          borderRadius: '10px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-        }}
-      >
-        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🚫</div>
-        <h2 style={{ color: '#dc2626', marginBottom: '0.5rem', fontSize: '1.5rem', fontWeight: '700' }}>
-          Access Restricted
-        </h2>
-        <p style={{ color: '#991b1b', marginBottom: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
-          You must be authenticated as an administrator to access event creation tooling.
-        </p>
-        <Link
-          href="/events"
-          style={{
-            display: 'inline-block',
-            backgroundColor: '#dc2626',
-            color: '#ffffff',
-            padding: '0.6rem 1.25rem',
-            borderRadius: '6px',
-            fontWeight: '600',
-            fontSize: '0.875rem',
-            textDecoration: 'none'
-          }}
-        >
-          ← Return to Events Catalog
-        </Link>
-      </div>
-    );
-  }
+    fetchUpcomingEvents();
+  }, []);
 
   return (
-    <div style={{ maxWidth: '650px', margin: '2rem auto', padding: '0 1rem' }}>
-      <Link
-        href="/events"
+    <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#0f172a', backgroundColor: '#ffffff' }}>
+      
+      {/* 1. HERO SECTION */}
+      <section
         style={{
-          color: '#64748b',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          textDecoration: 'none',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-          marginBottom: '1.25rem'
+          background: 'radial-gradient(circle at top right, #1e293b, #0f172a)',
+          color: '#ffffff',
+          padding: '6rem 1.5rem 5rem',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
-        ← Back to Events
-      </Link>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '3.25rem', fontWeight: '800', lineHeight: '1.15', marginBottom: '1.25rem', letterSpacing: '-0.025em' }}>
+            Welcome to EventHub
+          </h1>
 
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
-        }}
-      >
-        <h1 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>
-          Create New Event
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.75rem' }}>
-          Submit a new event entry into the system catalog.
-        </p>
+          <p style={{ fontSize: '1.25rem', color: '#94a3b8', lineHeight: '1.6', marginBottom: '2.5rem', maxWidth: '750px', margin: '0 auto 2.5rem' }}>
+            Ready for your next big tech experience? Find top-rated conferences on EventHub, secure your spot in seconds, and manage all your tickets effortlessly.
+          </p>
 
-        {error && (
-          <div
-            style={{
-              backgroundColor: '#fef2f2',
-              color: '#dc2626',
-              border: '1px solid #fecaca',
-              padding: '0.875rem 1rem',
-              borderRadius: '8px',
-              marginBottom: '1.5rem',
-              fontSize: '0.875rem',
-              lineHeight: '1.4'
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-              Event Title *
-            </label>
-            <input
-              type="text"
-              name="title"
-              required
-              placeholder="e.g. React & Next.js Workshop"
-              value={formData.title}
-              onChange={handleChange}
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link
+              href="/events"
               style={{
-                width: '100%',
-                padding: '0.65rem 0.875rem',
-                borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-                outline: 'none',
-                boxSizing: 'border-box'
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                padding: '0.9rem 2.25rem',
+                borderRadius: '8px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
               }}
-            />
+            >
+              Explore Live Events
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. FEATURED EVENTS SECTION */}
+      <section style={{ backgroundColor: '#ffffff', padding: '5rem 1.5rem' }}>
+        <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <span style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Upcoming Schedule
+              </span>
+              <h2 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.25rem 0 0', color: '#0f172a' }}>
+                Explore Featured Events
+              </h2>
+            </div>
+            <Link href="/events" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', fontSize: '0.95rem' }}>
+              Browse All Events →
+            </Link>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-              Description
-            </label>
-            <textarea
-              name="description"
-              rows={4}
-              placeholder="Provide event details, agenda, or prerequisites..."
-              value={formData.description}
-              onChange={handleChange}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>Loading available events...</div>
+          ) : events.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#64748b', border: '1px solid #e2e8f0' }}>
+              No upcoming events found. Check back later!
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+              {events.map((event) => {
+                const isSoldOut = event.availableSeats <= 0;
+
+                return (
+                  <div
+                    key={event._id}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <span
+                          style={{
+                            backgroundColor: isSoldOut ? '#fef3c7' : '#dcfce7',
+                            color: isSoldOut ? '#b45309' : '#15803d',
+                            fontSize: '0.75rem',
+                            fontWeight: '700',
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '6px'
+                          }}
+                        >
+                          {isSoldOut ? 'Priority Waitlist Active' : `${event.availableSeats ?? 0} Seats Remaining`}
+                        </span>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '0 0 0.5rem', color: '#0f172a' }}>
+                        {event.title}
+                      </h3>
+
+                      <p
+                        style={{
+                          color: '#64748b',
+                          fontSize: '0.875rem',
+                          lineHeight: '1.5',
+                          marginBottom: '1rem',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {event.description || 'Join us for a technical event filled with networking and key takeaway insights.'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '1.25rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
+                        <p style={{ margin: '0 0 0.25rem' }}>📍 {event.location || 'Online / Hybrid'}</p>
+                        <p style={{ margin: 0 }}>🗓️ {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
+                      </div>
+
+                      <Link
+                        href={`/events/${event._id}`}
+                        style={{
+                          display: 'block',
+                          textAlign: 'center',
+                          backgroundColor: isSoldOut ? '#d97706' : '#2563eb',
+                          color: '#ffffff',
+                          padding: '0.65rem 1rem',
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          textDecoration: 'none',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        {isSoldOut ? 'Join Waitlist Queue' : 'Reserve Ticket'}
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 3. PROMOTIONAL BOTTOM SECTION */}
+      <section style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '4.5rem 1.5rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '750px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '-0.025em' }}>
+            Don’t Miss Out on Upcoming Tech Events
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            Explore trending tech sessions, track live seat availability, and secure your spot before events sell out. Check the latest schedule and claim your ticket today!
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <Link
+              href="/events"
               style={{
-                width: '100%',
-                padding: '0.65rem 0.875rem',
-                borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-                outline: 'none',
-                resize: 'vertical',
-                boxSizing: 'border-box'
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                padding: '0.9rem 2.25rem',
+                borderRadius: '8px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
               }}
-            />
+            >
+              Explore Featured Events
+            </Link>
           </div>
+        </div>
+      </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-                Category
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.875rem',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  backgroundColor: '#ffffff',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                {['General', 'Tech', 'Workshop', 'Music', 'Conference', 'Sports'].map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-                Total Capacity *
-              </label>
-              <input
-                type="number"
-                name="capacity"
-                min="1"
-                required
-                placeholder="e.g. 50"
-                value={formData.capacity}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.875rem',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-                Location
-              </label>
-              <input
-                type="text"
-                name="location"
-                placeholder="e.g. Kathmandu or Online"
-                value={formData.location}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.875rem',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-                Event Date
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.875rem',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-              Tags (comma-separated)
-            </label>
-            <input
-              type="text"
-              name="tags"
-              placeholder="react, express, webdev"
-              value={formData.tags}
-              onChange={handleChange}
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.875rem',
-                borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              marginTop: '0.75rem',
-              padding: '0.75rem',
-              backgroundColor: loading ? '#94a3b8' : '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: '600',
-              fontSize: '0.95rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background-color 0.2s ease'
-            }}
-          >
-            {loading ? 'Submitting Event...' : 'Publish Event'}
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

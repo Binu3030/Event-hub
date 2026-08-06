@@ -16,6 +16,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Extract redirect query parameter if present
+  const { redirect } = router.query;
+  const registerUrl = redirect
+    ? `/register?redirect=${encodeURIComponent(redirect)}`
+    : '/register';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -25,11 +31,12 @@ export default function LoginPage() {
       const result = await login(formData.email, formData.password);
 
       if (result?.success || result?.user) {
-        // Redirect based on the user's assigned role
+        // Redirect based on user role and query parameters
         if (result.user?.role === 'admin') {
           router.replace('/admin');
         } else {
-          router.replace('/dashboard');
+          const targetPath = redirect ? decodeURIComponent(redirect) : '/dashboard';
+          router.replace(targetPath);
         }
       } else {
         setError(result?.error || 'Login failed. Please check your credentials.');
@@ -154,7 +161,7 @@ export default function LoginPage() {
 
         <p style={{ textAlign: 'center', fontSize: '0.875rem', color: '#64748b', marginTop: '1.5rem' }}>
           Don't have an account?{' '}
-          <Link href="/register" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none' }}>
+          <Link href={registerUrl} style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none' }}>
             Create one
           </Link>
         </p>

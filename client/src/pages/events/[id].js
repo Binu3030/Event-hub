@@ -4,217 +4,301 @@ import Link from 'next/link';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 
-export default function EventDetailPage() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+
+export default function EventDetailsPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { user } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
 
   const [event, setEvent] = useState(null);
+  const [userBooking, setUserBooking] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Fetch event details and check if user already has a booking
   useEffect(() => {
     if (!id) return;
 
-    const fetchEventDetails = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await axios.get(`/api/events/${id}`);
-        setEvent(response.data);
+        // Fetch event info
+        const eventRes = await axios.get(`${API_URL}/events/${id}`);
+        setEvent(eventRes.data.event || eventRes.data);
+
+        // Fetch user bookings if logged in to check existing reservation
+        if (token) {
+          const bookingsRes = await axios.get(`${API_URL}/bookings/my-bookings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const currentBooking = bookingsRes.data.find(
+            (b) => (b.eventId?._id || b.eventId) === id
+          );
+          if (currentBooking) {
+            setUserBooking(currentBooking);
+          }
+        }
       } catch (err) {
-        console.error('Error loading event:', err);
-        setMessage({
-          type: 'error',
-          text: err.response?.data?.error || 'Failed to load event details.'
-        });
+        console.error('Error fetching data:', err);
+        setMessage({ type: 'error', text: 'Failed to load event details.' });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEventDetails();
-  }, [id]);
+    fetchData();
+  }, [id, token]);
 
-  const handleBooking = async () => {
-    if (!user) {
-      router.push('/login');
+  // Handle Booking / Waitlist Request
+  const handleBookSeat = async () => {
+    if (!user || !token) {
+      router.push(`/login?redirect=/events/${id}`);
       return;
     }
 
-    setBookingLoading(true);
+    setActionLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await axios.post(`/api/events/${id}/book`);
-      
-      // Update local event data with new availableSeats count
-      if (response.data?.event) {
-        setEvent(response.data.event);
-      } else {
-        // Fallback re-fetch if updated object isn't returned directly
-        const updatedRes = await axios.get(`/api/events/${id}`);
-        setEvent(updatedRes.data);
-      }
+      // POST /api/bookings/:eventId
+      const res = await axios.post(
+        `${API_URL}/bookings/${id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       setMessage({
         type: 'success',
-        text: response.data?.message || 'Seat reserved successfully!'
+        text: res.data.message || 'Seat reserved successfully!',
       });
+
+      // Update state if booked or waitlisted
+      if (res.data.booking) {
+        setUserBooking(res.data.booking);
+        setEvent((prev) => ({
+          ...prev,
+          availableSeats: Math.max(0, (prev.availableSeats || 0) - 1),
+        }));
+      }
     } catch (err) {
       console.error('Booking error:', err);
       setMessage({
         type: 'error',
-        text: err.response?.data?.error || err.response?.data?.message || 'Booking failed. Please try again.'
+        text: err.response?.data?.error || err.response?.data?.message || 'Failed to process request.',
       });
     } finally {
-      setBookingLoading(false);
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Cancellation Request
+  const handleCancelBooking = async () => {
+    if (!userBooking) return;
+
+    setActionLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      // DELETE /api/bookings/:bookingId
+      const res = await axios.delete(`${API_URL}/bookings/${userBooking._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setMessage({
+        type: 'success',
+        text: res.data.message || 'Booking cancelled successfully.',
+      });
+
+      setUserBooking(null);
+
+      // Increment available seats if no waitlist reallocation occurred
+      if (!res.data.reallocated) {
+        setEvent((prev) => ({
+          ...prev,
+          availableSeats: (prev.availableSeats || 0) + 1,
+        }));
+      }
+    } catch (err) {
+      console.error('Cancellation error:', err);
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.error || 'Failed to cancel booking.',
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 0', color: '#64748b' }}>
+      <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
         Loading event details...
       </div>
     );
   }
 
-  if (!event && message.type === 'error') {
+  if (!event) {
     return (
-      <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '1rem' }}>
-        <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-          {message.text}
-        </div>
-        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <Link href="/events" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>
-            ← Back to Explore Events
-          </Link>
-        </div>
+      <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+        <h2>Event not found.</h2>
+        <Link href="/events" style={{ color: '#2563eb', textDecoration: 'none' }}>
+          Back to Events
+        </Link>
       </div>
     );
   }
 
-  const isSoldOut = event?.availableSeats <= 0;
-  const isAlreadyBooked = user && event?.attendees?.includes(user.id);
+  const isSoldOut = event.availableSeats <= 0;
 
   return (
     <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
-      {/* Back Link */}
-      <Link href="/events" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem', fontWeight: '600', display: 'inline-block', marginBottom: '1.5rem' }}>
-        ← Back to Explore Events
-      </Link>
+      {/* Navigation Link */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <Link
+          href="/events"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            color: '#2563eb',
+            fontWeight: '600',
+            textDecoration: 'none',
+            fontSize: '0.875rem',
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Events
+        </Link>
+      </div>
 
-      {/* Main Card */}
-      <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-        
-        {/* Banner Header */}
-        <div style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '2rem' }}>
-          <span style={{ backgroundColor: '#2563eb', padding: '0.25rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase' }}>
-            {event.category || 'General'}
-          </span>
-          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginTop: '0.75rem', marginBottom: '0.5rem' }}>
-            {event.title}
-          </h1>
-          <p style={{ color: '#94a3b8', margin: 0, fontSize: '0.95rem' }}>
-            📍 {event.location || 'Online'}
-          </p>
-        </div>
-
-        {/* Content Body */}
-        <div style={{ padding: '2rem' }}>
-          {/* Alert Message Box */}
-          {message.text && (
-            <div style={{
-              padding: '0.875rem 1rem',
-              borderRadius: '6px',
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '2rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+        {/* Banner Alert Message */}
+        {message.text && (
+          <div
+            style={{
+              padding: '1rem',
+              borderRadius: '8px',
               marginBottom: '1.5rem',
-              fontSize: '0.875rem',
+              fontSize: '0.95rem',
               fontWeight: '500',
-              backgroundColor: message.type === 'error' ? '#fef2f2' : '#f0fdf4',
-              color: message.type === 'error' ? '#dc2626' : '#166534',
-              border: `1px solid ${message.type === 'error' ? '#fecaca' : '#bbf7d0'}`
-            }}>
-              {message.text}
-            </div>
-          )}
+              backgroundColor: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
+              color: message.type === 'success' ? '#166534' : '#991b1b',
+              border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+            }}
+          >
+            {message.text}
+          </div>
+        )}
 
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.5rem' }}>
-            About This Event
-          </h3>
-          <p style={{ color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line', marginTop: 0, marginBottom: '2rem' }}>
-            {event.description}
-          </p>
+        <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '1rem' }}>
+          {event.title}
+        </h1>
 
-          {/* Key Metrics Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #f1f5f9' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Date & Time</div>
-              <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#0f172a', marginTop: '0.25rem' }}>
-                📅 {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}
-              </div>
-            </div>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+          About This Event
+        </h3>
+        <p style={{ color: '#475569', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+          {event.description}
+        </p>
 
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Total Capacity</div>
-              <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#0f172a', marginTop: '0.25rem' }}>
-                👥 {event.capacity} Seats
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Seat Status</div>
-              <div style={{ fontSize: '0.95rem', fontWeight: '700', marginTop: '0.25rem', color: isSoldOut ? '#dc2626' : '#166534' }}>
-                🎟️ {isSoldOut ? 'Sold Out' : `${event.availableSeats} Remaining`}
-              </div>
-            </div>
+        {/* Stats Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          <div>
+            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
+              DATE & TIME
+            </span>
+            <p style={{ margin: '0.25rem 0 0', fontWeight: '600', color: '#1e293b' }}>
+              🗓️ {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}
+            </p>
           </div>
 
-          {/* Tags */}
-          {event.tags && event.tags.length > 0 && (
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem' }}>Tags</div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {event.tags.map((tag, idx) => (
-                  <span key={idx} style={{ backgroundColor: '#e2e8f0', color: '#334155', padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600' }}>
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <div>
+            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
+              TOTAL CAPACITY
+            </span>
+            <p style={{ margin: '0.25rem 0 0', fontWeight: '600', color: '#1e293b' }}>
+              👥 {event.capacity || 100} Seats
+            </p>
+          </div>
 
-          {/* Reservation Action Section */}
-          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                {isAlreadyBooked ? 'You have a confirmed reservation.' : 'Ready to attend? Reserve your spot below.'}
-              </div>
-            </div>
+          <div>
+            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
+              SEAT STATUS
+            </span>
+            <p style={{ margin: '0.25rem 0 0', fontWeight: '700', color: event.availableSeats > 0 ? '#15803d' : '#dc2626' }}>
+              🎟️ {event.availableSeats ?? 0} Remaining
+            </p>
+          </div>
+        </div>
 
+        {/* Active Ticket Banner */}
+        {userBooking && (
+          <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+            <span style={{ fontSize: '0.875rem', color: '#1e40af', fontWeight: '600' }}>Your Ticket Code:</span>
+            <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e3a8a', margin: '0.25rem 0 0', letterSpacing: '0.05em' }}>
+              {userBooking.ticketCode}
+            </p>
+          </div>
+        )}
+
+        {/* Action Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <span style={{ color: '#64748b', fontSize: '0.875rem' }}>
+            {userBooking
+              ? 'You have a ticket for this event.'
+              : isSoldOut
+              ? 'Event is full. Join the priority waitlist.'
+              : 'Ready to attend? Reserve your spot below.'}
+          </span>
+
+          {userBooking ? (
             <button
-              onClick={handleBooking}
-              disabled={bookingLoading || isAlreadyBooked}
+              onClick={handleCancelBooking}
+              disabled={actionLoading}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: '600',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading ? 0.7 : 1,
+              }}
+            >
+              {actionLoading ? 'Cancelling...' : 'Cancel Reservation'}
+            </button>
+          ) : (
+            <button
+              onClick={handleBookSeat}
+              disabled={actionLoading}
               style={{
                 padding: '0.75rem 1.75rem',
+                backgroundColor: isSoldOut ? '#d97706' : '#2563eb',
+                color: '#ffffff',
+                border: 'none',
                 borderRadius: '6px',
                 fontWeight: '600',
                 fontSize: '0.95rem',
-                border: 'none',
-                cursor: (bookingLoading || isAlreadyBooked) ? 'not-allowed' : 'pointer',
-                backgroundColor: isAlreadyBooked ? '#166534' : isSoldOut ? '#d97706' : '#2563eb',
-                color: '#ffffff',
-                transition: 'background-color 0.2s ease'
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading ? 0.7 : 1,
               }}
             >
-              {bookingLoading
+              {actionLoading
                 ? 'Processing...'
-                : isAlreadyBooked
-                ? '✓ Seat Booked'
                 : isSoldOut
                 ? 'Join Waitlist'
                 : 'Book Seat Now'}
             </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
