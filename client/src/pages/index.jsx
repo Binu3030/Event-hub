@@ -1,187 +1,353 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
 
-export default function ExploreEventsPage() {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+export default function CreateEventPage() {
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const router = useRouter();
 
-  // Search & Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-  const categories = ['All', 'Music', 'Tech', 'Workshop', 'Conference', 'Sports'];
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await axios.get('/api/events');
-        setEvents(response.data || []);
-      } catch (err) {
-        console.error('Error fetching events:', err);
-        setError('Failed to load events. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, []);
-
-  // Filter events based on search input and category selection
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch =
-      event.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.location?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesCategory =
-      selectedCategory === 'All' ||
-      event.category?.toLowerCase() === selectedCategory.toLowerCase();
-
-    return matchesSearch && matchesCategory;
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: 'General',
+    location: '',
+    date: '',
+    capacity: '',
+    tags: ''
   });
 
-  return (
-    <div style={{ maxWidth: '1100px', margin: '2rem auto', padding: '0 1rem' }}>
-      {/* Header Section */}
-      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '0.5rem' }}>
-          Explore Events
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-          Discover tech meetups, music festivals, workshops, and conferences happening near you.
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Handle client-side redirect for unauthorized users
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== 'admin')) {
+      // Optional: Auto-redirect or handle access inline
+    }
+  }, [user, authLoading]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // Format payload: Parse capacity to Number and tags to a clean string array
+      const payload = {
+        ...formData,
+        capacity: Number(formData.capacity),
+        tags: formData.tags
+          ? formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
+          : []
+      };
+
+      await axios.post('/api/events', payload);
+      router.push('/events'); // Redirect to events catalog
+    } catch (err) {
+      console.error('Create Event Error:', err);
+      setError(
+        err.response?.data?.error || 'System error compiling event data schema initialization.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Render loading indicator while auth status resolves
+  if (authLoading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem 0', color: '#64748b', fontSize: '0.95rem' }}>
+        Verifying administrator permissions...
+      </div>
+    );
+  }
+
+  // Restrict access strictly to logged-in Admin users
+  if (!user || user.role !== 'admin') {
+    return (
+      <div
+        style={{
+          maxWidth: '550px',
+          margin: '4rem auto',
+          textAlign: 'center',
+          padding: '2.5rem 2rem',
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '10px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+        }}
+      >
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🚫</div>
+        <h2 style={{ color: '#dc2626', marginBottom: '0.5rem', fontSize: '1.5rem', fontWeight: '700' }}>
+          Access Restricted
+        </h2>
+        <p style={{ color: '#991b1b', marginBottom: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+          You must be authenticated as an administrator to access event creation tooling.
         </p>
-      </div>
-
-      {/* Search Bar & Category Filters */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-        {/* Search Input */}
-        <input
-          type="text"
-          placeholder="🔍 Search events by title, description, or location..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+        <Link
+          href="/events"
           style={{
-            width: '100%',
-            padding: '0.875rem 1rem',
-            borderRadius: '8px',
-            border: '1px solid #cbd5e1',
-            fontSize: '0.95rem',
-            outline: 'none',
-            boxSizing: 'border-box'
+            display: 'inline-block',
+            backgroundColor: '#dc2626',
+            color: '#ffffff',
+            padding: '0.6rem 1.25rem',
+            borderRadius: '6px',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            textDecoration: 'none'
           }}
-        />
-
-        {/* Category Pills */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '9999px',
-                border: '1px solid',
-                borderColor: selectedCategory === cat ? '#0f172a' : '#cbd5e1',
-                backgroundColor: selectedCategory === cat ? '#0f172a' : '#ffffff',
-                color: selectedCategory === cat ? '#ffffff' : '#334155',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        >
+          ← Return to Events Catalog
+        </Link>
       </div>
+    );
+  }
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '4rem 0', color: '#64748b' }}>
-          Loading events...
-        </div>
-      ) : error ? (
-        <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-          {error}
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        /* Empty State */
-        <div style={{ backgroundColor: '#f8fafc', border: '1px dashed #cbd5e1', padding: '3.5rem 1.5rem', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔎</div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
-            No Events Found
-          </h3>
-          <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
-            Try adjusting your search criteria or clearing selected category filters.
-          </p>
-        </div>
-      ) : (
-        /* Event Grid */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {filteredEvents.map((event) => (
-            <div
-              key={event._id}
+  return (
+    <div style={{ maxWidth: '650px', margin: '2rem auto', padding: '0 1rem' }}>
+      <Link
+        href="/events"
+        style={{
+          color: '#64748b',
+          fontSize: '0.875rem',
+          fontWeight: '600',
+          textDecoration: 'none',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          marginBottom: '1.25rem'
+        }}
+      >
+        ← Back to Events
+      </Link>
+
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          padding: '2rem',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
+        }}
+      >
+        <h1 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>
+          Create New Event
+        </h1>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.75rem' }}>
+          Submit a new event entry into the system catalog.
+        </p>
+
+        {error && (
+          <div
+            style={{
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              border: '1px solid #fecaca',
+              padding: '0.875rem 1rem',
+              borderRadius: '8px',
+              marginBottom: '1.5rem',
+              fontSize: '0.875rem',
+              lineHeight: '1.4'
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+              Event Title *
+            </label>
+            <input
+              type="text"
+              name="title"
+              required
+              placeholder="e.g. React & Next.js Workshop"
+              value={formData.title}
+              onChange={handleChange}
               style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                justify: 'space-between'
+                width: '100%',
+                padding: '0.65rem 0.875rem',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.9rem',
+                outline: 'none',
+                boxSizing: 'border-box'
               }}
-            >
-              {/* Event Header Banner / Image Placeholder */}
-              <div style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '1.5rem', position: 'relative' }}>
-                <span style={{ backgroundColor: '#2563eb', padding: '0.25rem 0.625rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', uppercase: 'true' }}>
-                  {event.category || 'General'}
-                </span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginTop: '0.75rem', marginBottom: '0' }}>
-                  {event.title}
-                </h3>
-              </div>
+            />
+          </div>
 
-              {/* Event Info Details */}
-              <div style={{ padding: '1.25rem', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <p style={{ color: '#475569', fontSize: '0.875rem', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0 }}>
-                  {event.description}
-                </p>
+          <div>
+            <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+              Description
+            </label>
+            <textarea
+              name="description"
+              rows={4}
+              placeholder="Provide event details, agenda, or prerequisites..."
+              value={formData.description}
+              onChange={handleChange}
+              style={{
+                width: '100%',
+                padding: '0.65rem 0.875rem',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.9rem',
+                outline: 'none',
+                resize: 'vertical',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
 
-                <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <div>📅 <strong>Date:</strong> {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</div>
-                  <div>📍 <strong>Location:</strong> {event.location || 'Online'}</div>
-                  <div>🎟️ <strong>Available Seats:</strong> {event.availableSeats ?? 'N/A'}</div>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid #f1f5f9', backgroundColor: '#fafafa' }}>
-                <Link
-                  href={`/events/${event._id}`}
-                  style={{
-                    display: 'block',
-                    textAlign: 'center',
-                    padding: '0.625rem',
-                    backgroundColor: '#0f172a',
-                    color: '#ffffff',
-                    borderRadius: '6px',
-                    fontWeight: '600',
-                    fontSize: '0.875rem',
-                    textDecoration: 'none'
-                  }}
-                >
-                  View Details & Book
-                </Link>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+                Category
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.875rem',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                  backgroundColor: '#ffffff',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {['General', 'Tech', 'Workshop', 'Music', 'Conference', 'Sports'].map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
-          ))}
-        </div>
-      )}
+
+            <div>
+              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+                Total Capacity *
+              </label>
+              <input
+                type="number"
+                name="capacity"
+                min="1"
+                required
+                placeholder="e.g. 50"
+                value={formData.capacity}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.875rem',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+                Location
+              </label>
+              <input
+                type="text"
+                name="location"
+                placeholder="e.g. Kathmandu or Online"
+                value={formData.location}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.875rem',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+                Event Date
+              </label>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.875rem',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+              Tags (comma-separated)
+            </label>
+            <input
+              type="text"
+              name="tags"
+              placeholder="react, express, webdev"
+              value={formData.tags}
+              onChange={handleChange}
+              style={{
+                width: '100%',
+                padding: '0.65rem 0.875rem',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.9rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              marginTop: '0.75rem',
+              padding: '0.75rem',
+              backgroundColor: loading ? '#94a3b8' : '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: '600',
+              fontSize: '0.95rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s ease'
+            }}
+          >
+            {loading ? 'Submitting Event...' : 'Publish Event'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

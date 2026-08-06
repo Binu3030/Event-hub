@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Pointing to your Express backend on Port 5001
+// Pointing to Express backend URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export const AuthContext = createContext({
   user: null,
+  token: null,
   loading: true,
   login: async () => {},
   register: async () => {},
@@ -14,16 +15,18 @@ export const AuthContext = createContext({
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Restore user session on app mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
-    if (token && storedUser) {
+    if (storedToken && storedUser) {
       try {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (e) {
         console.error('Failed to restore session:', e);
@@ -42,18 +45,19 @@ export const AuthProvider = ({ children }) => {
         timeout: 10000
       });
 
-      const { token, user: newUser } = response.data;
+      const { token: newToken, user: newUser } = response.data;
       const userPayload = newUser || {
         id: response.data.userId,
         name: userData.name,
         email: userData.email,
-        role: userData.role || 'Attendee'
+        role: userData.role || 'user' // Default role aligned to updated User model
       };
 
-      if (token && userPayload) {
-        localStorage.setItem('token', token);
+      if (newToken && userPayload) {
+        localStorage.setItem('token', newToken);
         localStorage.setItem('user', JSON.stringify(userPayload));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        setToken(newToken);
         setUser(userPayload);
       }
 
@@ -66,7 +70,7 @@ export const AuthProvider = ({ children }) => {
           err.response?.data?.error ||
           err.response?.data?.message ||
           (err.code === 'ERR_NETWORK'
-            ? 'Cannot connect to server. Ensure Express is running on http://localhost:5001.'
+            ? 'Cannot connect to server. Ensure Express backend is running.'
             : 'Registration failed.')
       };
     }
@@ -83,12 +87,13 @@ export const AuthProvider = ({ children }) => {
         }
       );
 
-      const { token, user: loggedUser } = response.data;
+      const { token: authToken, user: loggedUser } = response.data;
 
-      if (token && loggedUser) {
-        localStorage.setItem('token', token);
+      if (authToken && loggedUser) {
+        localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(loggedUser));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+        setToken(authToken);
         setUser(loggedUser);
       }
 
@@ -98,9 +103,10 @@ export const AuthProvider = ({ children }) => {
       return {
         success: false,
         error:
+          err.response?.data?.error ||
           err.response?.data?.message ||
           (err.code === 'ERR_NETWORK'
-            ? 'Cannot connect to server. Ensure Express is running on http://localhost:5001.'
+            ? 'Cannot connect to server. Ensure Express backend is running.'
             : 'Login failed.')
       };
     }
@@ -108,13 +114,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
