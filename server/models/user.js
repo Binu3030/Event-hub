@@ -18,8 +18,8 @@ const UserSchema = new mongoose.Schema({
   },
   role: { 
     type: String, 
-    enum: ['Attendee', 'Organizer'], 
-    default: 'Attendee' 
+    enum: ['user', 'admin'], 
+    default: 'user' 
   },
   // Algorithmic Weight Map: Stores tags as keys and frequency weights as values
   // e.g., { "tech": 5, "music": 2 }
@@ -29,5 +29,10 @@ const UserSchema = new mongoose.Schema({
     default: {} 
   } 
 }, { timestamps: true });
+
+// Instance method to easily check admin privilege
+UserSchema.methods.isAdmin = function() {
+  return this.role === 'admin';
+};
 
 module.exports = mongoose.model('User', UserSchema);

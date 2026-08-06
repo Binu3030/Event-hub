@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 // Unique signing key used to cryptographically sign tokens
-const JWT_SECRET = "super_secret_university_grading_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "super_secret_university_grading_key_2026";
 
 /**
  * Custom JWT Verification Middleware
@@ -30,4 +30,20 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = authenticateToken;
+/**
+ * Role Verification Middleware
+ * Ensures the authenticated request is issued strictly by an administrator
+ */
+const authorizeAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ 
+      error: "Access denied. Action restricted to administrators only." 
+    });
+  }
+  next();
+};
+
+module.exports = {
+  authenticateToken,
+  authorizeAdmin
+};

@@ -1,11 +1,8 @@
-
-
-
 const mongoose = require('mongoose');
 
 /**
  * EventHub Core Database Configuration Connection Module
- * Establishes explicit connection state to local MongoDB Server instance
+ * Establishes explicit connection state to local or remote MongoDB instance
  */
 const connectDB = async () => {
   try {

@@ -4,7 +4,38 @@ const crypto = require('crypto');
 const Booking = require('../models/booking');
 const Event = require('../models/event');
 const PriorityQueue = require('../utils/priorityQueue');
-const authenticateToken = require('../middleware/authMiddleware');
+const { authenticateToken } = require('../middleware/authMiddleware');
+
+/**
+ * GET /api/bookings/MyBookings
+ * Core Action: Fetch all booking records for the currently authenticated user.
+ * Access Level: Logged-in Users
+ */
+const getMyBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const bookings = await Booking.find({ userId })
+      .populate({
+        path: 'eventId',
+        select: 'title location date price availableSeats'
+      })
+      .sort({ bookedAt: -1 });
+
+    const formattedBookings = bookings.map((booking) => ({
+      ...booking.toObject(),
+      event: booking.eventId
+    }));
+
+    return res.status(200).json(formattedBookings);
+  } catch (err) {
+    console.error('Get my bookings error:', err);
+    return res.status(500).json({ error: 'Unable to load your bookings.' });
+  }
+};
+
+router.get('/my-bookings', authenticateToken, getMyBookings);
+router.get('/MyBookings', authenticateToken, getMyBookings);
 
 /**
  * POST /api/bookings/:eventId

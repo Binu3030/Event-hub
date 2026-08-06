@@ -49,14 +49,19 @@ export default function RegisterPage() {
       });
 
       if (result?.success) {
-        // Redirect to login page after successful registration
-        router.replace('/login'); 
+        // Redirect to dashboard or login
+        router.replace('/dashboard'); 
       } else {
         setError(result?.error || 'Registration failed.');
       }
     } catch (err) {
-      console.error(err);
-      setError('An unexpected error occurred during registration.');
+      console.error('Registration submit error:', err);
+      setError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'An unexpected error occurred during registration.'
+      );
     } finally {
       setLoading(false);
     }
@@ -65,8 +70,34 @@ export default function RegisterPage() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '1rem' }}>
       <div style={{ backgroundColor: '#ffffff', padding: '2.5rem', borderRadius: '8px', width: '100%', maxWidth: '440px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', textAlign: 'center', color: '#0f172a', marginBottom: '0.5rem' }}>Create an Account</h2>
-        <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Join EventHub to explore and manage live events.</p>
+        {/* Navigation Header / Back Button */}
+        <div style={{ marginBottom: '1rem' }}>
+          <Link 
+            href="/events" 
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.375rem', 
+              color: '#2563eb', 
+              fontWeight: '600', 
+              textDecoration: 'none',
+              fontSize: '0.875rem' 
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Events
+          </Link>
+        </div>
+
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', textAlign: 'center', color: '#0f172a', marginBottom: '0.5rem' }}>
+          Create an Account
+        </h2>
+        <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+          Join EventHub to explore and manage live events.
+        </p>
 
         {error && (
           <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '1rem' }}>
@@ -76,7 +107,9 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Full Name *</label>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>
+              Full Name *
+            </label>
             <input
               type="text"
               required
@@ -88,7 +121,9 @@ export default function RegisterPage() {
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Email Address *</label>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>
+              Email Address *
+            </label>
             <input
               type="email"
               required
@@ -100,7 +135,9 @@ export default function RegisterPage() {
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>Password *</label>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.25rem' }}>
+              Password *
+            </label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -133,7 +170,17 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
+            style={{ 
+              width: '100%', 
+              padding: '0.75rem', 
+              backgroundColor: '#0f172a', 
+              color: '#ffffff', 
+              border: 'none', 
+              borderRadius: '6px', 
+              fontWeight: '600', 
+              cursor: loading ? 'not-allowed' : 'pointer', 
+              opacity: loading ? 0.7 : 1 
+            }}
           >
             {loading ? 'Creating Account...' : 'Register'}
           </button>

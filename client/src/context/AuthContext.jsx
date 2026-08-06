@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Pointing to Express backend URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+// Express backend base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export const AuthContext = createContext({
   user: null,
@@ -18,24 +18,44 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore user session on app mount
+  // Restore and verify user session on app mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
-      try {
+      if (storedToken) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to restore session:', e);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        delete axios.defaults.headers.common['Authorization'];
+
+        // Fallback to local storage user while verifying fresh user status
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (e) {
+            console.error('Failed to parse cached user:', e);
+          }
+        }
+
+        // Fetch fresh profile from backend to sync real-time database changes (e.g., admin role updates)
+        try {
+          const res = await axios.get(`${API_URL}/auth/me`, { timeout: 5000 });
+          if (res.data?.user) {
+            setUser(res.data.user);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+          }
+        } catch (err) {
+          console.warn('Session check failed or expired token:', err?.message);
+          // Only clear if server returns 401/403 explicit unauthorized error
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            logout();
+          }
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const register = async (userData) => {
@@ -50,7 +70,7 @@ export const AuthProvider = ({ children }) => {
         id: response.data.userId,
         name: userData.name,
         email: userData.email,
-        role: userData.role || 'user' // Default role aligned to updated User model
+        role: userData.role || 'user'
       };
 
       if (newToken && userPayload) {
@@ -61,54 +81,69 @@ export const AuthProvider = ({ children }) => {
         setUser(userPayload);
       }
 
-      return { success: true, user: userPayload, data: response.data };
+      return { success: true, user: userPayload, token: newToken };
     } catch (err) {
       console.error('Registration Error:', err);
-      return {
-        success: false,
-        error:
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          (err.code === 'ERR_NETWORK'
-            ? 'Cannot connect to server. Ensure Express backend is running.'
-            : 'Registration failed.')
-      };
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (err.code === 'ERR_NETWORK'
+          ? 'Cannot connect to server. Ensure Express backend is running.'
+          : 'Registration failed.');
+
+      throw new Error(errorMessage);
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (userEmail, userPassword) => {
     try {
       const response = await axios.post(
         `${API_URL}/auth/login`,
-        { email, password },
+        { email: userEmail, password: userPassword },
         {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         }
       );
 
-      const { token: authToken, user: loggedUser } = response.data;
+      const {
+        token: authToken,
+        user: loggedUser,
+        id,
+        name,
+        role,
+        email: responseEmail
+      } = response.data;
 
-      if (authToken && loggedUser) {
-        localStorage.setItem('token', authToken);
-        localStorage.setItem('user', JSON.stringify(loggedUser));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-        setToken(authToken);
-        setUser(loggedUser);
+      const resolvedUser = loggedUser || (id ? { id, name, email: responseEmail, role } : null);
+
+      if (!authToken || !resolvedUser) {
+        throw new Error('Invalid response structure from authentication server.');
       }
 
-      return { success: true, user: loggedUser, data: response.data };
+      // Persist session
+      localStorage.setItem('token', authToken);
+      localStorage.setItem('user', JSON.stringify(resolvedUser));
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+
+      // Update state
+      setToken(authToken);
+      setUser(resolvedUser);
+
+      return { success: true, user: resolvedUser, token: authToken };
     } catch (err) {
       console.error('Login Error:', err);
-      return {
-        success: false,
-        error:
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          (err.code === 'ERR_NETWORK'
-            ? 'Cannot connect to server. Ensure Express backend is running.'
-            : 'Login failed.')
-      };
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (err.code === 'ERR_NETWORK'
+          ? 'Cannot connect to server. Ensure Express backend is running on port 5001.'
+          : 'Login failed.');
+
+      // Throw error to trigger catch block in login page
+      const errorObj = new Error(errorMessage);
+      errorObj.response = err.response;
+      throw errorObj;
     }
   };
 

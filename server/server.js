@@ -1,4 +1,4 @@
-require('dotenv').config(); // 👈 MANDATORY: Must be at line 1 to load environment variables
+require('dotenv').config(); // Load environment variables at startup
 
 const express = require('express');
 const cors = require('cors');
@@ -19,7 +19,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Express json parser
+// Express JSON Parser
 app.use(express.json());
 
 // System API Endpoints Mapping
@@ -27,14 +27,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
 
-// Base Status Endpoint
+// Base Health/Status Endpoint
 app.get('/', (req, res) => {
   return res.json({ status: 'Online', framework: 'EventHub MERN Core Engine Running' });
 });
 
-// Global 404 Fallback
+// Diagnostic 404 Fallback - Logs failed route requests in terminal
 app.use((req, res) => {
-  return res.status(404).json({ message: `Route ${req.originalUrl} not found.` });
+  console.log(`❌ 404 NOT FOUND: [${req.method}] ${req.originalUrl}`);
+  return res.status(404).json({ message: `Route ${req.originalUrl} not found on server.` });
 });
 
 const PORT = process.env.PORT || 5001;
