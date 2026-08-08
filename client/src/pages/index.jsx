@@ -1,13 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export default function HomePage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
+  const { user } = useContext(AuthContext);
+
+  // Helper function to verify authentication status
+  const checkAuthStatus = () => {
+    let hasToken = false;
+    if (typeof window !== 'undefined') {
+      hasToken = Boolean(
+        localStorage.getItem('token') || 
+        localStorage.getItem('jwt') || 
+        localStorage.getItem('authToken')
+      );
+    }
+    return Boolean(user || hasToken);
+  };
+
+  // 1. Automatic page redirect if not logged in
+  useEffect(() => {
+    const isAuthenticated = checkAuthStatus();
+    if (!isAuthenticated) {
+      router.replace('/login?redirect=%2Fevents');
+    }
+  }, [user, router]);
+
+  // 2. Fetch upcoming events
   useEffect(() => {
     const fetchUpcomingEvents = async () => {
       try {
@@ -25,6 +52,18 @@ export default function HomePage() {
 
     fetchUpcomingEvents();
   }, []);
+
+  // Button click handler
+  const handleNavigation = (e, destinationPath) => {
+    e.preventDefault();
+    const isAuthenticated = checkAuthStatus();
+
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(destinationPath)}`);
+    } else {
+      router.push(destinationPath);
+    }
+  };
 
   return (
     <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#0f172a', backgroundColor: '#ffffff' }}>
@@ -50,20 +89,22 @@ export default function HomePage() {
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link
-              href="/events"
+            <button
+              onClick={(e) => handleNavigation(e, '/events')}
               style={{
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
                 padding: '0.9rem 2.25rem',
                 borderRadius: '8px',
                 fontWeight: '600',
-                textDecoration: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1rem',
                 boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
               }}
             >
               Explore Live Events
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -80,9 +121,20 @@ export default function HomePage() {
                 Explore Featured Events
               </h2>
             </div>
-            <Link href="/events" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', fontSize: '0.95rem' }}>
+            <button
+              onClick={(e) => handleNavigation(e, '/events')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2563eb',
+                fontWeight: '600',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                padding: 0
+              }}
+            >
               Browse All Events →
-            </Link>
+            </button>
           </div>
 
           {loading ? (
@@ -95,6 +147,7 @@ export default function HomePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
               {events.map((event) => {
                 const isSoldOut = event.availableSeats <= 0;
+                const targetPath = `/events/${event._id}`;
 
                 return (
                   <div
@@ -152,22 +205,23 @@ export default function HomePage() {
                         <p style={{ margin: 0 }}>🗓️ {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
                       </div>
 
-                      <Link
-                        href={`/events/${event._id}`}
+                      <button
+                        onClick={(e) => handleNavigation(e, targetPath)}
                         style={{
-                          display: 'block',
+                          width: '100%',
                           textAlign: 'center',
                           backgroundColor: isSoldOut ? '#d97706' : '#2563eb',
                           color: '#ffffff',
                           padding: '0.65rem 1rem',
                           borderRadius: '6px',
                           fontWeight: '600',
-                          textDecoration: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
                           fontSize: '0.875rem'
                         }}
                       >
                         {isSoldOut ? 'Join Waitlist Queue' : 'Reserve Ticket'}
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 );
@@ -187,20 +241,22 @@ export default function HomePage() {
             Explore trending tech sessions, track live seat availability, and secure your spot before events sell out. Check the latest schedule and claim your ticket today!
           </p>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Link
-              href="/events"
+            <button
+              onClick={(e) => handleNavigation(e, '/events')}
               style={{
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
                 padding: '0.9rem 2.25rem',
                 borderRadius: '8px',
                 fontWeight: '600',
-                textDecoration: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1rem',
                 boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
               }}
             >
               Explore Featured Events
-            </Link>
+            </button>
           </div>
         </div>
       </section>
